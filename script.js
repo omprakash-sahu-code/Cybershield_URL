@@ -497,3 +497,34 @@ document
 
   });
   
+const toggleBtn = document.getElementById('themeToggle');
+window.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    document.body.classList.toggle(
+      'dark-mode',
+      savedTheme === 'dark'
+    );
+  } 
+  else {
+    const prefersDark = window.matchMedia(
+      '(prefers-color-scheme: dark)'
+    ).matches;
+
+    if (prefersDark) {
+      document.body.classList.add('dark-mode');
+    }
+  }
+});
+toggleBtn.addEventListener('click', () => {
+
+  document.body.classList.toggle('dark-mode');
+
+  const isDark =
+    document.body.classList.contains('dark-mode');
+
+  localStorage.setItem(
+    'theme',
+    isDark ? 'dark' : 'light'
+  );
+});

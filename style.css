@@ -1333,3 +1333,63 @@ input[type="text"].input-error {
   }
 
 }
+:root {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+}
+
+body.dark-mode {
+  --bg-color: #121212;
+  --text-color: #ffffff;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.header {
+  position: relative;
+}
+
+#themeToggle {
+  position: absolute;
+  top: 10px;
+  right: 0.1px;
+
+  width: 48px;
+  height: 48px;
+
+  border: none;
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+
+  box-shadow:
+    0 4px 20px rgba(0,0,0,0.08);
+
+  transition:
+    transform 0.3s ease,
+    background 0.3s ease;
+}
+
+#themeToggle:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.theme-icon {
+  font-size: 1.4rem;
+  color: #111;
+  transition: transform 0.3s ease;
+}
+
+body.dark-mode .theme-icon {
+  color: #fff;
+}
