@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CyberShield — URL Security Scanner</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
   <!-- ── Loading Screen ── -->
@@ -15,7 +17,7 @@
 
       <div class="loader-logo">
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#00ffb4" stroke-width="1.8">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
       </div>
 
@@ -35,12 +37,14 @@
 
       <!-- Header -->
       <header class="header">
-
+      
         <div class="logo-badge">
           <div class="dot"></div>
           CyberShield
         </div>
-
+         <button id="themeToggle" aria-label="Toggle dark mode">
+          🌙
+        </button>
         <h1>
           Is This URL<br>
           <span>Safe to Visit?</span>
@@ -68,26 +72,13 @@
 
           <div class="input-wrap">
 
-            <svg
-              class="input-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
 
-            <input
-              type="text"
-              id="urlInput"
-              placeholder="https://example.com"
-              autocomplete="off"
-              spellcheck="false"
-              aria-label="Enter website URL to scan"
-              aria-describedby="urlHint"
-            >
+            <input type="text" id="urlInput" placeholder="https://example.com" autocomplete="off" spellcheck="false"
+              aria-label="Enter website URL to scan" aria-describedby="urlHint">
 
             <small id="urlHint" class="sr-only">
               Enter a URL starting with http:// or https://
@@ -96,23 +87,12 @@
 
           </div>
 
-          <button
-            class="scan-btn"
-            id="scanBtn"
-            onclick="checkSecurity()"
-            aria-label="Scan the entered URL for security threats"
-          >
+          <button class="scan-btn" id="scanBtn" onclick="checkSecurity()"
+            aria-label="Scan the entered URL for security threats">
 
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-            >
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.35-4.35"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
             </svg>
 
             Scan URL
@@ -122,107 +102,69 @@
         </div>
 
         <!-- Example URLs -->
-        <div
-          class="examples"
-          role="group"
-          aria-label="Quick example URLs"
-        >
+        <div class="examples" role="group" aria-label="Quick example URLs">
 
           <span class="examples-label" id="examplesLabel">
             Try:
           </span>
 
-          <button
-            class="example-chip"
-            onclick="fillExample('https://google.com')"
-            tabindex="0"
-          >
+          <button class="example-chip" onclick="fillExample('https://google.com')" tabindex="0">
             google.com
           </button>
 
-          <button
-            class="example-chip"
-            onclick="fillExample('https://github.com')"
-            tabindex="0"
-          >
+          <button class="example-chip" onclick="fillExample('https://github.com')" tabindex="0">
             github.com
           </button>
 
-          <button
-            class="example-chip"
-            onclick="fillExample('http://testsafebrowsing.appspot.com/s/phishing.html')"
-            tabindex="0"
-          >
+          <button class="example-chip" onclick="fillExample('http://testsafebrowsing.appspot.com/s/phishing.html')"
+            tabindex="0">
             phishing test
           </button>
 
-          <button
-            class="example-chip"
-            onclick="fillExample('http://testsafebrowsing.appspot.com/s/malware.html')"
-            tabindex="0"
-          >
+          <button class="example-chip" onclick="fillExample('http://testsafebrowsing.appspot.com/s/malware.html')"
+            tabindex="0">
             malware test
           </button>
 
         </div>
 
         <!-- Result -->
-        <div
-          id="result"
-          aria-live="polite"
-          aria-atomic="true"
-          role="status"
-        ></div>
+        <div id="result" aria-live="polite" aria-atomic="true" role="status"></div>
 
         <!-- =========================
      Risk Analysis Section
 ========================== -->
 
-<div id="riskAnalysis" class="risk-analysis hidden">
+        <div id="riskAnalysis" class="risk-analysis hidden">
 
-  <h3>Threat Risk Analysis</h3>
+          <h3>Threat Risk Analysis</h3>
 
-  <!-- Risk Score -->
-  <div
-    class="risk-score-text"
-    id="riskScoreText"
-  >
-    Risk Score: 0%
-  </div>
+          <!-- Risk Score -->
+          <div class="risk-score-text" id="riskScoreText">
+            Risk Score: 0%
+          </div>
 
-  <!-- Risk Meter -->
-  <div class="meter-bar">
-    <div
-      id="riskFill"
-      class="meter-fill"
-    ></div>
-  </div>
+          <!-- Risk Meter -->
+          <div class="meter-bar">
+            <div id="riskFill" class="meter-fill"></div>
+          </div>
 
-  <!-- Confidence -->
-  <div
-    class="confidence-text"
-    id="confidenceText"
-  >
-    Confidence Level: 0%
-  </div>
+          <!-- Confidence -->
+          <div class="confidence-text" id="confidenceText">
+            Confidence Level: 0%
+          </div>
 
-  <!-- Confidence Meter -->
-  <div class="meter-bar">
-    <div
-      id="confidenceFill"
-      class="meter-fill safe"
-    ></div>
-  </div>
+          <!-- Confidence Meter -->
+          <div class="meter-bar">
+            <div id="confidenceFill" class="meter-fill safe"></div>
+          </div>
 
-  <!-- Risk Label -->
-  <div
-    class="risk-label"
-    id="riskLabel"
-  >
-    SAFE
-  </div>
+          <!-- Risk Label -->
+          <div class="risk-label" id="riskLabel">
+            SAFE
+          </div>
 
-</div>
+        </div>
 
       </div>
 
@@ -294,25 +236,12 @@
         </div>
 
         <!-- Toggle Button -->
-        <button
-          class="team-toggle"
-          id="teamToggle"
-          onclick="toggleTeam()"
-          aria-label="Show team members"
-          aria-expanded="false"
-          aria-controls="teamGridWrap"
-        >
+        <button class="team-toggle" id="teamToggle" onclick="toggleTeam()" aria-label="Show team members"
+          aria-expanded="false" aria-controls="teamGridWrap">
 
-          <svg
-            id="toggleIcon"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-          >
-            <polyline points="6 9 12 15 18 9"/>
+          <svg id="toggleIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2">
+            <polyline points="6 9 12 15 18 9" />
           </svg>
 
         </button>
@@ -360,11 +289,7 @@
                 Threat Analytics Dashboard
               </a>
 
-              <a
-                href="https://github.com/Mrinalray/Cybershield_URL"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href="https://github.com/Mrinalray/Cybershield_URL" target="_blank" rel="noopener noreferrer">
                 GitHub Repo
               </a>
 
@@ -388,4 +313,5 @@
   <script src="script.js"></script>
 
 </body>
+
 </html>
