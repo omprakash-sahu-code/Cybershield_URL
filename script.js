@@ -444,31 +444,74 @@ async function checkSecurity() {
   );
 
   try {
-    // Simulate network delay for UI effect
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const response = await fetch('https://cybershield-sxz0.onrender.com/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
 
-    // Mock backend threat detection
-    let isMockThreat = false;
-    let mockThreats = [];
-    const lowerUrl = url.toLowerCase();
+    if (!response.ok) throw new Error('Server error ' + response.status);
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
 
-    if (lowerUrl.includes('testsafebrowsing.appspot.com') || lowerUrl.includes('phishing') || lowerUrl.includes('malware')) {
-      isMockThreat = true;
-      if (lowerUrl.includes('malware')) {
-        mockThreats.push('MALWARE');
-      } else {
-        mockThreats.push('SOCIAL ENGINEERING');
-      }
-    }
-
-    if (isMockThreat) {
+    if (data.matches && data.matches.length > 0) {
+      const allThreats = data.matches.map(m => m.threatType);
+      const urlObj = new URL(url);
+      const isHttps = urlObj.protocol === 'https:';
+      const hasPhishing = allThreats.includes('SOCIAL_ENGINEERING');
+      const hasMalware = allThreats.includes('MALWARE');
+      const hasUnwanted = allThreats.includes('UNWANTED_SOFTWARE');
+      const hasHarmful = allThreats.includes('POTENTIALLY_HARMFUL_APPLICATION');
+      const threats = [...new Set(allThreats.map(t => t.replace(/_/g, ' ')))];
       updateStats('danger');
       showResult('danger', 'Threat Detected!',
-        'This URL is flagged as dangerous. Do not visit it.', url, mockThreats);
+        `This URL is flagged as dangerous. Do not visit it.<br><br>
+        <div class="breakdown">
+          <div class="breakdown-item">
+            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure'}
+          </div>
+          <div class="breakdown-item">
+            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
+          </div>
+        </div>`, url, threats);
     } else {
       updateStats('safe');
+      const urlObj = new URL(url);
+      const isHttps = urlObj.protocol === 'https:';
+      const allThreats = data.matches ? data.matches.map(m => m.threatType) : [];
+      const hasPhishing = allThreats.includes('SOCIAL_ENGINEERING');
+      const hasMalware = allThreats.includes('MALWARE');
+      const hasUnwanted = allThreats.includes('UNWANTED_SOFTWARE');
+      const hasHarmful = allThreats.includes('POTENTIALLY_HARMFUL_APPLICATION');
+
       showResult('safe', 'URL is Safe',
-        'No threats detected. Our local heuristic found no issues.', url, []);
+        `No threats detected. Google Safe Browsing found no issues.<br><br>
+        <div class="breakdown">
+          <div class="breakdown-item">
+            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure — use with caution'}
+          </div>
+          <div class="breakdown-item">
+            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
+          </div>
+        </div>`, url, []);
     }
 
   } catch (err) {
