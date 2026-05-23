@@ -130,6 +130,11 @@ function showResult(type, title, desc, url, threats) {
           ? `<div class="threat-tags">${threats.map(t =>
               `<span class="threat-tag">${t}</span>`).join('')}</div>`
           : ''}
+        ${(type === 'safe' || type === 'danger') ? `
+          <div class="export-btns" style="display:flex;gap:10px;margin-top:16px;">
+            <button onclick="downloadPDF()" style="padding:10px 20px;cursor:pointer;border-radius:8px;border:none;background:#00ffb4;color:#0f172a;font-size:13px;font-weight:600;">⬇ Download PDF</button>
+            <button onclick="downloadImage()" style="padding:10px 20px;cursor:pointer;border-radius:8px;border:none;background:#3b82f6;color:#ffffff;font-size:13px;font-weight:600;">⬇ Download Image</button>
+          </div>` : ''}
       </div>
     </div>`;
 }
@@ -232,3 +237,57 @@ async function checkSecurity() {
 document.getElementById('urlInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') checkSecurity();
 });
+async function captureReport() {
+  const card = document.querySelector('#result .result-card');
+  if (!card) return null;
+
+  const reportDiv = document.createElement('div');
+  reportDiv.style.cssText = `
+    position: fixed; top: -9999px; left: -9999px;
+    width: 600px; padding: 32px;
+    background: #1e293b; border-radius: 12px;
+    font-family: sans-serif; color: #f1f5f9;
+  `;
+  reportDiv.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div style="background:#0f766e;width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;">🛡️</div>
+      <div>
+        <div style="font-size:20px;font-weight:700;color:#00ffb4;">CyberShield Report</div>
+        <div style="font-size:12px;color:#94a3b8;">${new Date().toLocaleString()}</div>
+      </div>
+    </div>
+    <div style="background:#0f172a;border-radius:8px;padding:16px;margin-bottom:16px;">
+      ${card.querySelector('.result-title') ? `<div style="font-size:18px;font-weight:700;color:#00ffb4;margin-bottom:8px;">${card.querySelector('.result-title').innerText}</div>` : ''}
+      ${card.querySelector('.result-url') ? `<div style="font-size:13px;color:#94a3b8;margin-bottom:12px;">${card.querySelector('.result-url').innerText}</div>` : ''}
+      <div style="font-size:14px;color:#cbd5e1;line-height:1.8;">
+        ${card.querySelector('.breakdown') ? card.querySelector('.breakdown').innerText.split('\n').filter(l => l.trim()).map(l => `<div style="padding:4px 0;border-bottom:1px solid #1e293b;">${l}</div>`).join('') : ''}
+      </div>
+    </div>
+    ${card.querySelector('.threat-tags') ? `<div style="margin-top:12px;">${card.querySelector('.threat-tags').innerText.split('\n').map(t => `<span style="background:#7f1d1d;color:#fca5a5;padding:4px 10px;border-radius:20px;font-size:12px;margin-right:6px;">${t}</span>`).join('')}</div>` : ''}
+  `;
+  document.body.appendChild(reportDiv);
+  const canvas = await html2canvas(reportDiv, { scale: 2, backgroundColor: '#1e293b' });
+  document.body.removeChild(reportDiv);
+  return canvas;
+}
+
+async function downloadImage() {
+  const canvas = await captureReport();
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = 'cybershield-report.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function downloadPDF() {
+  const canvas = await captureReport();
+  if (!canvas) return;
+  const imgData = canvas.toDataURL('image/png');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const imgHeight = (canvas.height * pageWidth) / canvas.width;
+  pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
+  pdf.save('cybershield-report.pdf');
+}
