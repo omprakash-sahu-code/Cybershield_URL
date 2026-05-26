@@ -154,8 +154,12 @@ function createApp(options = {}) {
   app.post("/check", async (req, res) => {
     const userUrl = req.body.url;
 
-    if (!userUrl) {
-      return res.status(400).json({ error: "No URL provided" });
+    if (!userUrl || typeof userUrl !== "string") {
+      return res.status(400).json({ error: "No URL provided or invalid format" });
+    }
+
+    if (userUrl.length > 2048) {
+      return res.status(400).json({ error: "URL exceeds maximum length of 2048 characters" });
     }
 
     try {
