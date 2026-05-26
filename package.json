@@ -1,9 +1,10 @@
 {
   "name": "url-detector",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Real-time threat detection scanner powered by Google Safe Browsing API.",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "node --test"
   },
   "keywords": [],
