@@ -587,3 +587,33 @@ async function downloadPDF() {
   pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
   pdf.save('cybershield-report.pdf');
 }
+// ─────────────────────────────
+// THEME TOGGLE
+// ─────────────────────────────
+
+(function initTheme() {
+
+  const btn = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('theme') || 'dark';
+
+  applyTheme(saved);
+
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const isLight = document.documentElement.classList.contains('light-mode');
+      applyTheme(isLight ? 'dark' : 'light');
+    });
+  }
+
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-mode');
+      if (btn) btn.textContent = '☀️';
+    } else {
+      document.documentElement.classList.remove('light-mode');
+      if (btn) btn.textContent = '🌙';
+    }
+    localStorage.setItem('theme', theme);
+  }
+
+})();

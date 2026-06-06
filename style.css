@@ -209,9 +209,9 @@ body::before {
 }
 
 /* ── Theme Toggle ── */
-.theme-toggle-btn {
-  position: absolute;
-  top: 32px;
+#themeToggle {
+  position: fixed;
+  top: 24px;
   right: 24px;
   width: 48px;
   height: 48px;
@@ -222,106 +222,16 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 22px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
 }
 
-.theme-toggle-btn:hover {
-  transform: scale(1.05);
+#themeToggle:hover {
+  transform: scale(1.1);
   border-color: var(--accent-1);
-  box-shadow: 0 0 15px rgba(0, 255, 180, 0.2);
-}
-
-.toggle-icon-wrap {
-  position: relative;
-  width: 20px;
-  height: 20px;
-}
-
-.sun-icon, .moon-icon {
-  position: absolute;
-  inset: 0;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  color: var(--accent-1);
-}
-
-.light-mode .sun-icon {
-  transform: translateY(30px) rotate(45deg);
-  opacity: 0;
-}
-
-.light-mode .moon-icon {
-  transform: translateY(0) rotate(0);
-  opacity: 1;
-}
-
-.sun-icon {
-  transform: translateY(0) rotate(0);
-  opacity: 1;
-}
-
-.moon-icon {
-  transform: translateY(-30px) rotate(-45deg);
-  opacity: 0;
-}
-
-/* ── Theme Toggle ── */
-.theme-toggle-btn {
-  position: absolute;
-  top: 32px;
-  right: 24px;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.theme-toggle-btn:hover {
-  transform: scale(1.05);
-  border-color: var(--accent-1);
-  box-shadow: 0 0 15px rgba(0, 255, 180, 0.2);
-}
-
-.toggle-icon-wrap {
-  position: relative;
-  width: 20px;
-  height: 20px;
-}
-
-.sun-icon, .moon-icon {
-  position: absolute;
-  inset: 0;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  color: var(--accent-1);
-}
-
-.light-mode .sun-icon {
-  transform: translateY(30px) rotate(45deg);
-  opacity: 0;
-}
-
-.light-mode .moon-icon {
-  transform: translateY(0) rotate(0);
-  opacity: 1;
-}
-
-.sun-icon {
-  transform: translateY(0) rotate(0);
-  opacity: 1;
-}
-
-.moon-icon {
-  transform: translateY(-30px) rotate(-45deg);
-  opacity: 0;
+  box-shadow: 0 0 16px rgba(var(--accent-1-rgb), 0.25);
 }
 
 /* ── Header ── */
@@ -499,6 +409,7 @@ input[type="text"].input-error {
   align-items: center;
   gap: 8px;
   transition: transform 0.15s, opacity 0.15s;
+  text-decoration: none;
 }
 
 .scan-btn:hover  { transform: translateY(-1px); opacity: 0.92; }
@@ -1145,6 +1056,7 @@ input[type="text"].input-error {
     grid-template-columns: 1fr;
   }
 }
+
 .breakdown {
   margin-top: 10px;
   display: flex;
@@ -1156,6 +1068,7 @@ input[type="text"].input-error {
   font-size: 0.9rem;
   color: #a0aec0;
 }
+
 @media (max-width: 600px) {
   .header h1 { font-size: 32px; }
   .scanner-card { padding: 24px; }
@@ -1189,11 +1102,12 @@ input[type="text"].input-error {
     width: 72px;
     height: 72px;
   }
-  .theme-toggle-btn {
-    top: 16px;
-    right: 16px;
+  #themeToggle {
+    top: 12px;
+    right: 12px;
     width: 40px;
     height: 40px;
+    font-size: 18px;
   }
   .team-grid-wrap.open {
     max-height: 2000px;
