@@ -60,8 +60,8 @@
       <section class="dashboard-card">
         <h2>Demo Visualization</h2>
         <div class="chart-card">
-          <p>Chart placeholders will appear here once analytics are implemented.</p>
-          <div class="chart-placeholder">Bar / Line Graphs</div>
+          <p>Interactive scanner threat analysis charts:</p>
+          <canvas id="analyticsChart" style="max-height: 250px; width: 100%;"></canvas>
         </div>
       </section>
 
@@ -89,6 +89,42 @@
     </footer>
   </div>
 
-  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const ctx = document.getElementById('analyticsChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Safe Scan', 'Malware Detected', 'Phishing Detected', 'Unwanted App'],
+          datasets: [{
+            label: 'Threat Identifications',
+            data: [65, 12, 19, 3],
+            backgroundColor: [
+              'rgba(0, 255, 180, 0.6)',
+              'rgba(248, 113, 113, 0.6)',
+              'rgba(251, 191, 36, 0.6)',
+              'rgba(59, 130, 246, 0.6)'
+            ],
+            borderColor: [
+              'rgba(0, 255, 180, 1)',
+              'rgba(248, 113, 113, 1)',
+              'rgba(251, 191, 36, 1)',
+              'rgba(59, 130, 246, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    });
+  </script>
 </body>
 </html>
