@@ -49,9 +49,9 @@ Temporary or permanent ban from the project
 5. Reporting Issues
 If you experience or witness unacceptable behavior, please report it by:
 
-## Opening a private issue
-Contacting the maintainers directly
-All reports will be handled confidentially.
+* Opening a private issue in the repository
+* Contacting the maintainers directly at `maintainer-conduct@cybershield.org`
+All reports will be handled confidentially and in a timely manner.
 
 6. Attribution
 This Code of Conduct is adapted from the Contributor Covenant (version 2.1) https://www.contributor-covenant.org/
