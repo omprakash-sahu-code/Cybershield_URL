@@ -448,7 +448,10 @@ async function checkSecurity() {
   );
 
   try {
-    const response = await fetch('https://cybershield-sxz0.onrender.com/check', {
+    const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:3000'
+      : 'https://cybershield-sxz0.onrender.com';
+    const response = await fetch(`${apiHost}/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url })
