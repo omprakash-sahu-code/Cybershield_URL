@@ -102,12 +102,22 @@
       <section id="developer">
         <h2>For Developers</h2>
         <p>To run CyberShield locally for development purposes, ensure you have Node.js installed and follow these steps:</p>
-        <div class="code-block">
-          git clone https://github.com/Mrinalray/Cybershield_URL.git<br>
-          cd Cybershield_URL<br>
-          npm install<br>
-          node server.js
+        <div style="position: relative;">
+          <button onclick="copyCommands()" style="position: absolute; right: 10px; top: 10px; padding: 6px 12px; font-size: 11px; background: var(--accent-1); color: var(--bg-color); border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Copy</button>
+          <pre id="cmdBlock" class="code-block" style="margin: 0; white-space: pre-wrap;">git clone https://github.com/Mrinalray/Cybershield_URL.git
+cd Cybershield_URL
+npm install
+node server.js</pre>
         </div>
+        <script>
+          function copyCommands() {
+            const text = document.getElementById('cmdBlock').innerText;
+            navigator.clipboard.writeText(text);
+            const btn = document.querySelector('button[onclick="copyCommands()"]');
+            btn.innerText = 'Copied!';
+            setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+          }
+        </script>
       </section>
     </div>
 
