@@ -338,6 +338,8 @@ function showResult(type, title, desc, url, threats) {
         ${
           type === 'loading'
             ? '<div class="spinner"></div>'
+            : type === 'scan-loading'
+            ? ''
             : `<span>${icons[type]}</span>`
         }
 
@@ -437,15 +439,54 @@ async function checkSecurity() {
 
   btn.disabled = true;
 
-  // Loading State
+  // Loading State — enhanced scan animation
 
-  showResult(
-    'loading',
-    'Scanning...',
-    'Checking against threat databases. Please wait.',
-    url,
-    []
-  );
+  document.getElementById('result').innerHTML = `
+    <div class="result-card loading">
+      <div class="result-body">
+        <div class="scan-loading">
+          <div class="scan-shield-wrap">
+            <div class="scan-shield-ring-outer"></div>
+            <div class="scan-shield-ring"></div>
+            <div class="scan-shield-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="1.8">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+          </div>
+          <div>
+            <div class="result-title" style="text-align:center;">Scanning URL...</div>
+            <div class="result-url" style="text-align:center;margin-top:8px;">${url}</div>
+          </div>
+          <div class="scan-progress-wrap">
+            <div class="scan-progress-bar">
+              <div class="scan-progress-fill"></div>
+            </div>
+            <div class="scan-status-text">
+              <span class="scan-status-step">Checking threat databases...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  // Animate status text steps
+  const statusEl = document.querySelector('.scan-status-step');
+  const steps = [
+    'Connecting to Safe Browsing API...',
+    'Analyzing URL patterns...',
+    'Checking threat databases...',
+    'Finalizing results...'
+  ];
+  let stepIndex = 0;
+  const stepTimer = setInterval(() => {
+    stepIndex++;
+    if (stepIndex < steps.length && statusEl) {
+      statusEl.textContent = steps[stepIndex];
+    } else {
+      clearInterval(stepTimer);
+    }
+  }, 800);
 
   try {
     const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
