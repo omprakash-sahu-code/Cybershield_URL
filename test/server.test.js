@@ -120,3 +120,18 @@ test("retries transient fetch failures before succeeding", async () => {
   assert.equal(result.status, 200);
   assert.equal(attempts, 3);
 });
+
+test("returns 400 for missing URL", async () => {
+  const app = createApp({
+    apiKey: "test-key",
+    allowedOrigins: ["http://localhost:3000"],
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({})
+    })
+  });
+
+  const result = await runRequest(app, {}, "http://localhost:3000");
+  assert.equal(result.status, 400);
+  assert.equal(result.body.error, "No URL provided");
+});
