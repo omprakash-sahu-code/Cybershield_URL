@@ -11,12 +11,12 @@
 <body>
 
   <!-- ── Loading Screen ── -->
-  <div id="loader">
+  <div id="loader" role="alert" aria-live="assertive" aria-label="Loading CyberShield">
     <div class="loader-inner">
       <div class="loader-ring"></div>
 
       <div class="loader-logo">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#00ffb4" stroke-width="1.8">
+        <svg aria-hidden="true" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#00ffb4" stroke-width="1.8">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
       </div>
@@ -42,7 +42,7 @@
           <div class="dot"></div>
           CyberShield
         </div>
-         <button id="themeToggle" aria-label="Toggle dark mode">
+         <button type="button" id="themeToggle" aria-label="Toggle dark mode">
           🌙
         </button>
         <h1>
@@ -72,7 +72,7 @@
 
           <div class="input-wrap">
 
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg aria-hidden="true" class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
@@ -87,7 +87,7 @@
 
           </div>
 
-          <button class="scan-btn" id="scanBtn" onclick="checkSecurity()"
+          <button type="button" class="scan-btn" id="scanBtn" onclick="checkSecurity()"
             aria-label="Scan the entered URL for security threats">
 
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -129,7 +129,7 @@
         </div>
 
         <!-- Result -->
-        <div id="result" aria-live="polite" aria-atomic="true" role="status"></div>
+        <div id="result" aria-live="polite" aria-atomic="true" role="status" tabindex="-1"></div>
 
         <!-- =========================
      Risk Analysis Section
@@ -236,10 +236,10 @@
         </div>
 
         <!-- Toggle Button -->
-        <button class="team-toggle" id="teamToggle" onclick="toggleTeam()" aria-label="Show team members"
+        <button type="button" class="team-toggle" id="teamToggle" onclick="toggleTeam()" aria-label="Show team members"
           aria-expanded="false" aria-controls="teamGridWrap">
 
-          <svg id="toggleIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          <svg aria-hidden="true" id="toggleIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2.2">
             <polyline points="6 9 12 15 18 9" />
           </svg>

@@ -14,6 +14,11 @@ window.addEventListener('load', () => {
     setTimeout(() => {
       loader.style.display = 'none';
       main.classList.remove('hidden');
+
+      // Move focus to main content after loader for screen readers
+      main.setAttribute('tabindex', '-1');
+      main.focus();
+
     }, 500);
 
   }, 3200);
@@ -44,13 +49,13 @@ const team = [
       .join('');
 
     return `
-      <div class="member-card">
+      <div class="member-card" role="listitem">
 
         <div class="member-avatar">
 
           <img
             src="${m.img}"
-            alt="${m.name}"
+            alt="${m.name} - Team Member"
             onerror="this.parentElement.innerHTML='${initials}'"
           >
 
@@ -64,6 +69,10 @@ const team = [
     `;
 
   }).join('');
+
+  // Add list role to grid for screen readers
+  grid.setAttribute('role', 'list');
+  grid.setAttribute('aria-label', 'Team members');
 
 })();
 
@@ -186,8 +195,12 @@ function formatAndValidateUrl(input) {
 
 function fillExample(url) {
 
-  document.getElementById('urlInput').value = url;
-  document.getElementById('urlInput').focus();
+  const input = document.getElementById('urlInput');
+  input.value = url;
+  input.focus();
+
+  // Update aria-label to reflect filled value for screen readers
+  input.setAttribute('aria-label', `URL input, filled with ${url}. Press Enter or click Scan URL to scan.`);
 
 }
 
@@ -270,8 +283,8 @@ function calculateRiskScore(url, isThreat) {
 
   score = Math.min(100, score);
 
-  let confidence = isThreat ? 99 : 88; 
-  if (!isThreat && score > 20) confidence -= 12; 
+  let confidence = isThreat ? 99 : 88;
+  if (!isThreat && score > 20) confidence -= 12;
 
   return { score, confidence, breakdown };
 }
@@ -285,44 +298,60 @@ function showResult(type, title, desc, url, threats) {
     error: '!'
   };
 
+  // Map result type to human-readable label for screen readers
+  const ariaLabels = {
+    safe: 'Safe',
+    danger: 'Danger',
+    error: 'Error',
+    loading: 'Loading'
+  };
+
   const isThreat = type === 'danger';
   let riskSectionHtml = '';
   let riskData = null;
 
   if ((type === 'safe' || type === 'danger') && url) {
     riskData = calculateRiskScore(url, isThreat);
-    
+
     let meterColor = 'var(--accent-1)';
     if (riskData.score > 30) meterColor = '#fbbf24';
     if (riskData.score > 60) meterColor = '#f87171';
 
     let breakdownHtml = riskData.breakdown.map(item => {
       let icon = '';
-      if (item.type === 'safe') icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffb4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-      else if (item.type === 'warning') icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
-      else if (item.type === 'danger') icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+      let iconLabel = '';
+      if (item.type === 'safe') {
+        icon = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffb4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        iconLabel = 'Safe';
+      } else if (item.type === 'warning') {
+        icon = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+        iconLabel = 'Warning';
+      } else if (item.type === 'danger') {
+        icon = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+        iconLabel = 'Danger';
+      }
 
-      return `<div class="breakdown-item ${item.type}">${icon} <span>${item.text}</span></div>`;
+      return `<div class="breakdown-item ${item.type}" role="listitem"><span class="sr-only">${iconLabel}:</span>${icon} <span>${item.text}</span></div>`;
     }).join('');
 
     riskSectionHtml = `
-      <div class="risk-analysis">
+      <div class="risk-analysis" role="region" aria-label="Risk Analysis">
         <div class="risk-header">
           <div class="risk-stat">
-            <div class="risk-stat-value" style="color: ${meterColor}"><span id="animated-score">0</span><span class="risk-stat-max">/100</span></div>
+            <div class="risk-stat-value" style="color: ${meterColor}"><span id="animated-score" aria-label="Risk score">0</span><span class="risk-stat-max" aria-hidden="true">/100</span></div>
             <div class="risk-stat-label">Risk Score</div>
           </div>
           <div class="risk-stat">
-            <div class="risk-stat-value"><span id="animated-confidence">0</span>%</div>
+            <div class="risk-stat-value"><span id="animated-confidence" aria-label="Confidence percentage">0</span>%</div>
             <div class="risk-stat-label">Confidence</div>
           </div>
         </div>
-        
-        <div class="risk-meter-wrap">
+
+        <div class="risk-meter-wrap" role="progressbar" aria-valuenow="${riskData.score}" aria-valuemin="0" aria-valuemax="100" aria-label="Risk level meter">
           <div class="risk-meter-bar" style="width: 0%; background-color: ${meterColor};" data-target-width="${riskData.score}%"></div>
         </div>
 
-        <div class="risk-breakdown">
+        <div class="risk-breakdown" role="list" aria-label="Risk breakdown details">
           ${breakdownHtml}
         </div>
       </div>
@@ -331,9 +360,9 @@ function showResult(type, title, desc, url, threats) {
 
   document.getElementById('result').innerHTML = `
 
-    <div class="result-card ${type}">
+    <div class="result-card ${type}" role="region" aria-label="Scan result: ${ariaLabels[type] || type}">
 
-      <div class="result-icon">
+      <div class="result-icon" aria-hidden="true">
 
         ${
           type === 'loading'
@@ -348,20 +377,28 @@ function showResult(type, title, desc, url, threats) {
       <div class="result-body">
         <div class="result-title">${title}</div>
         <div class="result-desc">${desc}</div>
-        ${url ? `<div class="result-url">${url}</div>` : ''}
+        ${url ? `<div class="result-url" aria-label="Scanned URL: ${url}">${url}</div>` : ''}
         ${threats && threats.length
-          ? `<div class="threat-tags">${threats.map(t =>
-              `<span class="threat-tag">${t}</span>`).join('')}</div>`
+          ? `<div class="threat-tags" role="list" aria-label="Detected threats">${threats.map(t =>
+              `<span class="threat-tag" role="listitem">${t}</span>`).join('')}</div>`
           : ''}
         ${(type === 'safe' || type === 'danger') ? `
           <div class="export-btns">
-            <button onclick="downloadPDF()" class="export-btn export-btn-pdf">⬇ Download PDF</button>
-            <button onclick="downloadImage()" class="export-btn export-btn-img">⬇ Download Image</button>
+            <button type="button" onclick="downloadPDF()" class="export-btn export-btn-pdf" aria-label="Download scan report as PDF">⬇ Download PDF</button>
+            <button type="button" onclick="downloadImage()" class="export-btn export-btn-img" aria-label="Download scan report as image">⬇ Download Image</button>
           </div>` : ''}
       </div>
     </div>`;
 
+  // Move focus to result div so screen readers announce the outcome
+  const resultEl = document.getElementById('result');
+  resultEl.setAttribute('tabindex', '-1');
+  resultEl.focus();
+
   if (riskSectionHtml) {
+    // Append risk section after result card
+    resultEl.querySelector('.result-card').insertAdjacentHTML('beforeend', riskSectionHtml);
+
     setTimeout(() => {
       const bar = document.querySelector('.risk-meter-bar');
       if (bar) {
@@ -438,27 +475,29 @@ async function checkSecurity() {
     document.getElementById('scanBtn');
 
   btn.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
+  btn.setAttribute('aria-label', 'Scanning URL, please wait...');
 
   // Loading State — enhanced scan animation
 
   document.getElementById('result').innerHTML = `
-    <div class="result-card loading">
+    <div class="result-card loading" role="status" aria-live="polite" aria-label="Scanning in progress">
       <div class="result-body">
         <div class="scan-loading">
-          <div class="scan-shield-wrap">
+          <div class="scan-shield-wrap" aria-hidden="true">
             <div class="scan-shield-ring-outer"></div>
             <div class="scan-shield-ring"></div>
             <div class="scan-shield-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="1.8">
+              <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="1.8">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
             </div>
           </div>
           <div>
             <div class="result-title" style="text-align:center;">Scanning URL...</div>
-            <div class="result-url" style="text-align:center;margin-top:8px;">${url}</div>
+            <div class="result-url" style="text-align:center;margin-top:8px;" aria-label="URL being scanned: ${url}">${url}</div>
           </div>
-          <div class="scan-progress-wrap">
+          <div class="scan-progress-wrap" aria-hidden="true">
             <div class="scan-progress-bar">
               <div class="scan-progress-fill"></div>
             </div>
@@ -514,21 +553,31 @@ async function checkSecurity() {
       updateStats('danger');
       showResult('danger', 'Threat Detected!',
         `This URL is flagged as dangerous. Do not visit it.<br><br>
-        <div class="breakdown">
-          <div class="breakdown-item">
-            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure'}
+        <div class="breakdown" role="list" aria-label="Security breakdown">
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${isHttps ? '✅' : '⚠️'}</span>
+            <span class="sr-only">${isHttps ? 'Secure' : 'Insecure'}:</span>
+            <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure'}
           </div>
-          <div class="breakdown-item">
-            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasMalware ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasMalware ? 'Detected' : 'Clear'}:</span>
+            <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasPhishing ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasPhishing ? 'Detected' : 'Clear'}:</span>
+            <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasUnwanted ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasUnwanted ? 'Detected' : 'Clear'}:</span>
+            <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasHarmful ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasHarmful ? 'Detected' : 'Clear'}:</span>
+            <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
         </div>`, url, threats);
     } else {
@@ -543,21 +592,31 @@ async function checkSecurity() {
 
       showResult('safe', 'URL is Safe',
         `No threats detected. Google Safe Browsing found no issues.<br><br>
-        <div class="breakdown">
-          <div class="breakdown-item">
-            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure — use with caution'}
+        <div class="breakdown" role="list" aria-label="Security breakdown">
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${isHttps ? '✅' : '⚠️'}</span>
+            <span class="sr-only">${isHttps ? 'Secure' : 'Warning'}:</span>
+            <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure — use with caution'}
           </div>
-          <div class="breakdown-item">
-            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasMalware ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasMalware ? 'Detected' : 'Clear'}:</span>
+            <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasPhishing ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasPhishing ? 'Detected' : 'Clear'}:</span>
+            <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasUnwanted ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasUnwanted ? 'Detected' : 'Clear'}:</span>
+            <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasHarmful ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasHarmful ? 'Detected' : 'Clear'}:</span>
+            <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
         </div>`, url, []);
     }
@@ -569,7 +628,8 @@ async function checkSecurity() {
       '', []);
   } finally {
     btn.disabled = false;
-
+    btn.removeAttribute('aria-busy');
+    btn.setAttribute('aria-label', 'Scan the entered URL for security threats');
   }
 
 }
@@ -577,6 +637,7 @@ async function checkSecurity() {
 document.getElementById('urlInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') checkSecurity();
 });
+
 async function captureReport() {
   const card = document.querySelector('#result .result-card');
   if (!card) return null;
@@ -588,6 +649,7 @@ async function captureReport() {
     background: #1e293b; border-radius: 12px;
     font-family: sans-serif; color: #f1f5f9;
   `;
+  reportDiv.setAttribute('aria-hidden', 'true');
   reportDiv.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
       <div style="background:#0f766e;width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;">🛡️</div>
@@ -631,6 +693,7 @@ async function downloadPDF() {
   pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
   pdf.save('cybershield-report.pdf');
 }
+
 // ─────────────────────────────
 // THEME TOGGLE
 // ─────────────────────────────
@@ -652,10 +715,18 @@ async function downloadPDF() {
   function applyTheme(theme) {
     if (theme === 'light') {
       document.documentElement.classList.add('light-mode');
-      if (btn) btn.textContent = '☀️';
+      if (btn) {
+        btn.textContent = '☀️';
+        btn.setAttribute('aria-label', 'Switch to dark mode');
+        btn.setAttribute('aria-pressed', 'false');
+      }
     } else {
       document.documentElement.classList.remove('light-mode');
-      if (btn) btn.textContent = '🌙';
+      if (btn) {
+        btn.textContent = '🌙';
+        btn.setAttribute('aria-label', 'Switch to light mode');
+        btn.setAttribute('aria-pressed', 'true');
+      }
     }
     localStorage.setItem('theme', theme);
   }
