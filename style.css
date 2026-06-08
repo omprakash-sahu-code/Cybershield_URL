@@ -1286,3 +1286,28 @@ input[type="text"].input-error {
 @media (max-width: 380px) {
   .team-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Accessibility: Focus styles ── */
+:focus-visible {
+  outline: 2px solid #00ffb4;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Remove default focus for mouse users only */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
