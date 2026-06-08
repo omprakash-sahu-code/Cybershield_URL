@@ -107,7 +107,25 @@ let dangerCount = 0;
 function isValidUrl(urlString) {
 
   try {
-    new URL(urlString);
+    const urlObj = new URL(urlString);
+    const hostname = urlObj.hostname;
+
+    // To allow local testing
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return true;
+    }
+
+    const parts = hostname.split('.');
+    if (parts.length < 2) {
+      return false;
+    }
+
+    const tld = parts[parts.length - 1];
+    // TLD must be at least 2 chars & consist of only letters
+    if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
+      return false;
+    }
+
     return true;
   } catch (e) {
     return false;
@@ -138,6 +156,15 @@ function formatAndValidateUrl(input) {
     !url.startsWith('https://')
   ) {
     url = 'https://' + url;
+  }
+
+  // Validate URL length
+  if (url.length > 2048) {
+    return {
+      valid: false,
+      error: 'URL exceeds maximum length of 2048 characters.',
+      url: null
+    };
   }
 
   if (!isValidUrl(url)) {
@@ -261,7 +288,7 @@ function calculateRiskScore(url, isThreat) {
       score += 10;
       breakdown.push({ text: 'Excessive subdomains used', type: 'warning' });
     } else {
-       breakdown.push({ text: 'Domain structure appears normal', type: 'safe' });
+      breakdown.push({ text: 'Domain structure appears normal', type: 'safe' });
     }
   } catch (e) {
     score += 20;
@@ -270,8 +297,8 @@ function calculateRiskScore(url, isThreat) {
 
   score = Math.min(100, score);
 
-  let confidence = isThreat ? 99 : 88; 
-  if (!isThreat && score > 20) confidence -= 12; 
+  let confidence = isThreat ? 99 : 88;
+  if (!isThreat && score > 20) confidence -= 12;
 
   return { score, confidence, breakdown };
 }
@@ -291,7 +318,7 @@ function showResult(type, title, desc, url, threats) {
 
   if ((type === 'safe' || type === 'danger') && url) {
     riskData = calculateRiskScore(url, isThreat);
-    
+
     let meterColor = 'var(--accent-1)';
     if (riskData.score > 30) meterColor = '#fbbf24';
     if (riskData.score > 60) meterColor = '#f87171';
@@ -335,13 +362,12 @@ function showResult(type, title, desc, url, threats) {
 
       <div class="result-icon">
 
-        ${
-          type === 'loading'
-            ? '<div class="spinner"></div>'
-            : type === 'scan-loading'
-            ? ''
-            : `<span>${icons[type]}</span>`
-        }
+        ${type === 'loading'
+      ? '<div class="spinner"></div>'
+      : type === 'scan-loading'
+        ? ''
+        : `<span>${icons[type]}</span>`
+    }
 
       </div>
 
@@ -350,9 +376,9 @@ function showResult(type, title, desc, url, threats) {
         <div class="result-desc">${desc}</div>
         ${url ? `<div class="result-url">${url}</div>` : ''}
         ${threats && threats.length
-          ? `<div class="threat-tags">${threats.map(t =>
-              `<span class="threat-tag">${t}</span>`).join('')}</div>`
-          : ''}
+      ? `<div class="threat-tags">${threats.map(t =>
+        `<span class="threat-tag">${t}</span>`).join('')}</div>`
+      : ''}
         ${(type === 'safe' || type === 'danger') ? `
           <div class="export-btns">
             <button onclick="downloadPDF()" class="export-btn export-btn-pdf">⬇ Download PDF</button>
