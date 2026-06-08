@@ -354,9 +354,9 @@ function showResult(type, title, desc, url, threats) {
               `<span class="threat-tag">${t}</span>`).join('')}</div>`
           : ''}
         ${(type === 'safe' || type === 'danger') ? `
-          <div class="export-btns" style="display:flex;gap:10px;margin-top:16px;">
-            <button onclick="downloadPDF()" style="padding:10px 20px;cursor:pointer;border-radius:8px;border:none;background:#00ffb4;color:#0f172a;font-size:13px;font-weight:600;">⬇ Download PDF</button>
-            <button onclick="downloadImage()" style="padding:10px 20px;cursor:pointer;border-radius:8px;border:none;background:#3b82f6;color:#ffffff;font-size:13px;font-weight:600;">⬇ Download Image</button>
+          <div class="export-btns">
+            <button onclick="downloadPDF()" class="export-btn export-btn-pdf">⬇ Download PDF</button>
+            <button onclick="downloadImage()" class="export-btn export-btn-img">⬇ Download Image</button>
           </div>` : ''}
       </div>
     </div>`;
