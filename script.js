@@ -557,6 +557,8 @@ async function checkSecurity() {
             ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
         </div>`, url, threats);
+
+      addToHistory(url, 'DANGER');
     } else {
       updateStats('safe');
       const urlObj = new URL(url);
@@ -586,14 +588,20 @@ async function checkSecurity() {
             ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
         </div>`, url, []);
+
+      addToHistory(url, 'SAFE');
     }
+
 
   } catch (err) {
     showResult('error', 'Scan Error',
       `An unexpected error occurred.<br>
        <small style="color:#334155">Error: ${err.message}</small>`,
       '', []);
+    // Store attempted URL only if it passed initial validation
+    addToHistory(input, 'ERROR');
   } finally {
+
     btn.disabled = false;
 
   }
@@ -658,8 +666,112 @@ async function downloadPDF() {
   pdf.save('cybershield-report.pdf');
 }
 // ─────────────────────────────
+// HISTORY PANEL (localStorage)
+// ─────────────────────────────
+
+const HISTORY_KEY = 'cybershield_scan_history_v1';
+
+function safeParseJson(value, fallback) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeUrlForHistory(urlString) {
+  try {
+    const input = (urlString || '').trim();
+    if (!input) return '';
+    const withProto =
+      input.startsWith('http://') || input.startsWith('https://')
+        ? input
+        : 'https://' + input;
+    const u = new URL(withProto);
+    // Remove trailing slash to reduce duplicates
+    const path = (u.pathname && u.pathname !== '/') ? u.pathname : '';
+    const query = u.search ? u.search : '';
+    const hash = '';
+    return `${u.protocol}//${u.hostname}${path}${query}${hash}`;
+  } catch {
+    // If normalization fails, use raw trimmed input
+    return (urlString || '').trim();
+  }
+}
+
+function loadHistory() {
+  const raw = localStorage.getItem(HISTORY_KEY);
+  const arr = safeParseJson(raw, []);
+  if (!Array.isArray(arr)) return [];
+  return arr;
+}
+
+function saveHistory(history) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function renderHistory() {
+  const listEl = document.getElementById('historyList');
+  const metaEl = document.getElementById('historyMeta');
+  if (!listEl) return;
+
+  const history = loadHistory();
+
+  if (!history.length) {
+    if (metaEl) metaEl.textContent = 'No scans yet';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  if (metaEl) metaEl.textContent = `${history.length} saved scan${history.length === 1 ? '' : 's'}`;
+
+  // newest first
+  const view = [...history].sort((a, b) => (b.at || 0) - (a.at || 0));
+  listEl.innerHTML = view.map(item => {
+    const at = item.at ? new Date(item.at).toLocaleString() : '';
+    const status = item.status || 'UNKNOWN';
+    return `
+      <div class="history-item" role="listitem">
+        <button type="button" onclick="fillExample(${JSON.stringify(item.url)})" aria-label="Fill input with saved URL">
+          <div class="history-url">${item.url}</div>
+          <div class="history-url" style="margin-top:4px; font-size:11px; color: var(--subtitle-color); text-transform: uppercase; letter-spacing: .06em;">${status}</div>
+        </button>
+        <div class="history-at">${at}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function addToHistory(url, status) {
+  if (!url) return;
+
+  const normalized = normalizeUrlForHistory(url);
+  if (!normalized) return;
+
+  const history = loadHistory();
+
+  // De-dup by normalized URL (do not delete others)
+  const existingIndex = history.findIndex(h => normalizeUrlForHistory(h.url) === normalized);
+  const entry = { url: url.trim(), normalized, at: Date.now(), status: (status || '').toUpperCase() };
+
+  if (existingIndex >= 0) {
+    history[existingIndex] = entry;
+  } else {
+    history.push(entry);
+  }
+
+  saveHistory(history);
+  renderHistory();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderHistory();
+});
+
+// ─────────────────────────────
 // THEME TOGGLE
 // ─────────────────────────────
+
 
 (function initTheme() {
 
