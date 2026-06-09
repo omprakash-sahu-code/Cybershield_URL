@@ -314,10 +314,30 @@ async function callSafeBrowsingWithRetry(fetchImpl, apiKey, requestBody, timeout
   return { ok: false, fetchError: "Google API request failed" };
 }
 
+const SYSTEM_INSTRUCTION = `You are CyberShield AI, an advanced digital fraud and scam detection assistant.
+Your goal is to analyze messages, emails, SMS, job offers, investment pitches, or other text pasted by the user to determine if it is a scam.
+
+Cover these main categories:
+1. Phishing: Credential theft attempts, fake bank logins, malicious link clicks, weird domain patterns.
+2. Fake Job Offers: Advance-fee recruitment scams, daily-tasks-for-pay scams, remote data entry traps, payment requests for kits.
+3. OTP Fraud / UPI PIN Theft: Requests to share OTP code, PINs, card verification details, or social engineering to approve transfers.
+4. Investment Scams: Crypto doubling programs, high-yield investment programs (HYIP), fake telegram channel recommendations, pump & dump schemes.
+5. Impersonation Scams: Fake courier support (FedEx, DHL, India Post, customs duty), mock law enforcement/police warnings, fake friends/bosses asking for emergency money.
+
+Analyze threat indicators like artificial urgency, fear tactics, grammatical errors, request for sensitive files/data, payment instructions, or unrecognized URLs.
+
+Provide output conforming EXACTLY to the requested JSON schema.
+- "classification": Assess if this message is safe, suspicious (has minor flags or questionable intent), or malicious (clear fraud signature).
+- "scamType": Choose the matching scam category ("phishing", "fake_job", "otp_fraud", "investment_scam", "impersonation", "other", or "none" if safe).
+- "confidence": Percentage score (0 to 100) representing threat analysis confidence.
+- "explanation": Explain clearly why this message was classified this way. Highlight the specific threat indicators (e.g. urgent requests, unverified links) detected. If the user is asking general follow-up safety questions, answer them helpful and directly here.
+- "actionableAdvice": Specific, actionable warning instructions (e.g. "Do NOT click the link", "Contact FedEx directly via their official number").`;
+
 function createApp(options = {}) {
   const app = express();
   const fetchImpl = options.fetchImpl || fetch;
   const apiKey = options.apiKey || API_KEY;
+  const geminiKey = options.geminiKey || process.env.GEMINI_API_KEY;
   const timeoutMs = toPositiveInteger(options.timeoutMs, REQUEST_TIMEOUT_MS);
   const retries = toNonNegativeInteger(options.retries, REQUEST_RETRIES);
   const allowedOrigins = options.allowedOrigins || getAllowedOrigins();
@@ -451,6 +471,121 @@ function createApp(options = {}) {
         variants: variantsWithThreat
       }
     });
+  });
+
+  app.post("/api/scam-detect", async (req, res) => {
+    const { message, history } = req.body;
+
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "No message text provided or invalid format" });
+    }
+
+    if (!geminiKey) {
+      return res.status(500).json({ error: "Missing Gemini API key configuration" });
+    }
+
+    console.log(`[SCAM DETECT] Analyzing message input`);
+
+    const formattedContents = [];
+    if (Array.isArray(history)) {
+      history.forEach(h => {
+        formattedContents.push({
+          role: h.role === "user" ? "user" : "model",
+          parts: [{ text: h.text }]
+        });
+      });
+    }
+    formattedContents.push({
+      role: "user",
+      parts: [{ text: message }]
+    });
+
+    try {
+      const fetchImpl = options.fetchImpl || fetch;
+      const response = await fetchImpl(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: formattedContents,
+            systemInstruction: {
+              parts: [{ text: SYSTEM_INSTRUCTION }]
+            },
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  classification: {
+                    type: "STRING",
+                    enum: ["safe", "suspicious", "malicious"]
+                  },
+                  scamType: {
+                    type: "STRING",
+                    enum: ["phishing", "fake_job", "otp_fraud", "investment_scam", "impersonation", "other", "none"]
+                  },
+                  confidence: {
+                    type: "INTEGER"
+                  },
+                  explanation: {
+                    type: "STRING"
+                  },
+                  actionableAdvice: {
+                    type: "STRING"
+                  }
+                },
+                required: ["classification", "scamType", "confidence", "explanation", "actionableAdvice"]
+              }
+            }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`[GEMINI API ERROR] Status ${response.status}:`, errText);
+        return res.status(502).json({
+          error: `Gemini API error: ${response.status}`,
+          detail: "Failed to communicate with LLM backend"
+        });
+      }
+
+      const responseData = await response.json();
+      
+      if (
+        responseData.candidates &&
+        responseData.candidates[0] &&
+        responseData.candidates[0].content &&
+        responseData.candidates[0].content.parts &&
+        responseData.candidates[0].content.parts[0]
+      ) {
+        const text = responseData.candidates[0].content.parts[0].text;
+        try {
+          const parsed = JSON.parse(text);
+          return res.json(parsed);
+        } catch (jsonErr) {
+          console.error("[JSON PARSE ERROR] Text was:", text);
+          return res.status(502).json({
+            error: "Invalid JSON response structure from LLM",
+            detail: "Failed to parse model response"
+          });
+        }
+      }
+
+      return res.status(502).json({
+        error: "Empty content returned from LLM service",
+        detail: "No candidates returned"
+      });
+    } catch (fetchErr) {
+      console.error("[GEMINI FETCH ERROR]", fetchErr);
+      return res.status(500).json({
+        error: "Failed to fetch response from Gemini backend",
+        detail: fetchErr.message
+      });
+    }
   });
 
   app.use((err, req, res, next) => {
