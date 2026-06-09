@@ -475,9 +475,16 @@ function showResult(type, title, desc, url, threats) {
   if ((type === 'safe' || type === 'danger') && url) {
     riskData = calculateRiskScore(url, isThreat);
 
+    let riskStatus = 'Safe';
     let meterColor = 'var(--accent-1)';
-    if (riskData.score > 30) meterColor = '#fbbf24';
-    if (riskData.score > 60) meterColor = '#f87171';
+    if (riskData.score > 30) {
+      riskStatus = 'Suspicious';
+      meterColor = '#fbbf24';
+    }
+    if (riskData.score > 60) {
+      riskStatus = 'Dangerous';
+      meterColor = '#f87171';
+    }
 
     let breakdownHtml = riskData.breakdown.map(item => {
       let icon = '';
@@ -502,6 +509,10 @@ function showResult(type, title, desc, url, threats) {
           <div class="risk-stat">
             <div class="risk-stat-value" style="color: ${meterColor}"><span id="animated-score" aria-label="Risk score">0</span><span class="risk-stat-max" aria-hidden="true">/100</span></div>
             <div class="risk-stat-label">Risk Score</div>
+          </div>
+          <div class="risk-stat">
+            <div class="risk-stat-value" style="color: ${meterColor}">${riskStatus}</div>
+            <div class="risk-stat-label">Status</div>
           </div>
           <div class="risk-stat">
             <div class="risk-stat-value"><span id="animated-confidence" aria-label="Confidence percentage">0</span>%</div>
@@ -550,7 +561,8 @@ function showResult(type, title, desc, url, threats) {
             <button type="button" onclick="downloadImage()" class="export-btn export-btn-img" aria-label="Download scan report as image">⬇ Download Image</button>
           </div>` : ''}
       </div>
-    </div>`;
+    </div>
+    ${riskSectionHtml}`;
 
   // Move focus to result div so screen readers announce the outcome
   const resultEl = document.getElementById('result');
@@ -825,6 +837,36 @@ async function captureReport() {
   const card = document.querySelector('#result .result-card');
   if (!card) return null;
 
+  const riskAnalysisEl = document.querySelector('#result .risk-analysis');
+  let riskAnalysisReportHtml = '';
+  if (riskAnalysisEl) {
+    const scoreVal = riskAnalysisEl.querySelector('#animated-score')?.innerText || '0';
+    const statusVal = riskAnalysisEl.querySelectorAll('.risk-stat-value')[1]?.innerText || 'Safe';
+    const confVal = riskAnalysisEl.querySelector('#animated-confidence')?.innerText || '0';
+    const meterBarEl = riskAnalysisEl.querySelector('.risk-meter-bar');
+    const meterColor = meterBarEl ? meterBarEl.style.backgroundColor : '#00ffb4';
+    
+    riskAnalysisReportHtml = `
+      <div style="background:#0f172a;border-radius:8px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:16px;font-weight:700;color:#cbd5e1;margin-bottom:12px;">Threat Risk Analysis</div>
+        <div style="display:flex;gap:24px;margin-bottom:12px;">
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:20px;color:${meterColor};">${scoreVal}/100</div>
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;margin-top:2px;">Risk Score</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:20px;color:${meterColor};">${statusVal}</div>
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;margin-top:2px;">Status</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:20px;color:#cbd5e1;">${confVal}%</div>
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;margin-top:2px;">Confidence</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   const reportDiv = document.createElement('div');
   reportDiv.style.cssText = `
     position: fixed; top: -9999px; left: -9999px;
@@ -848,6 +890,7 @@ async function captureReport() {
         ${card.querySelector('.breakdown') ? card.querySelector('.breakdown').innerText.split('\n').filter(l => l.trim()).map(l => `<div style="padding:4px 0;border-bottom:1px solid #1e293b;">${l}</div>`).join('') : ''}
       </div>
     </div>
+    ${riskAnalysisReportHtml}
     ${card.querySelector('.threat-tags') ? `<div style="margin-top:12px;">${card.querySelector('.threat-tags').innerText.split('\n').map(t => `<span style="background:#7f1d1d;color:#fca5a5;padding:4px 10px;border-radius:20px;font-size:12px;margin-right:6px;">${t}</span>`).join('')}</div>` : ''}
   `;
   document.body.appendChild(reportDiv);
