@@ -1286,3 +1286,64 @@ input[type="text"].input-error {
 @media (max-width: 380px) {
   .team-grid { grid-template-columns: 1fr; }
 }
+
+/* ════════════════════════════
+   TYPOSQUATTING FAMILY TREE SECTION
+   ════════════════════════════ */
+.tree-container svg {
+  user-select: none;
+}
+
+.node circle {
+  transition: r 0.2s ease, filter 0.2s ease;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.15));
+}
+
+.node:hover circle {
+  r: 12px !important;
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+.node.category:hover circle {
+  r: 9px !important;
+}
+
+.node.variant:hover circle {
+  r: 7px !important;
+}
+
+.node text {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: fill 0.3s ease;
+}
+
+.link {
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+.tree-tooltip {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  border-color: var(--card-border) !important;
+  background: var(--card-bg) !important;
+}
+
+/* Light Mode Overrides for Family Tree */
+.light-mode .node text {
+  fill: #1e293b !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+.light-mode .tree-tooltip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #1e293b !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.light-mode .tree-tooltip div {
+  color: #0f172a !important;
+}
+
+.light-mode .link {
+  stroke: rgba(100, 116, 139, 0.4) !important;
+}
