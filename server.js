@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3002;
 const API_KEY = process.env.API_KEY;
 const BASE_RETRY_DELAY_MS = 250;
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
+const sharedReports = {};
 
 function toPositiveInteger(value, fallback) {
   const parsed = Number(value);
@@ -587,6 +588,57 @@ function createApp(options = {}) {
       });
     }
   });
+
+
+  // ─────────────────────────────
+// SHARE REPORT ROUTES
+// ─────────────────────────────
+
+// Create shareable report
+app.post("/share", (req, res) => {
+
+  const { url, resultType, threats, riskScore } = req.body;
+
+  if (!url || !resultType) {
+    return res.status(400).json({
+      error: "Missing required report data"
+    });
+  }
+
+  // Generate unique share ID
+  const shareId =
+    Math.random().toString(36).substring(2, 10);
+
+  // Store report temporarily
+  sharedReports[shareId] = {
+    url,
+    resultType,
+    threats: threats || [],
+    riskScore: riskScore || 0,
+    createdAt: new Date().toISOString()
+  };
+
+  return res.json({
+    shareUrl:
+      `http://127.0.0.1:5500/share.html?id=${shareId}`
+  });
+
+});
+
+// Get shared report
+app.get("/share/:id", (req, res) => {
+
+  const report = sharedReports[req.params.id];
+
+  if (!report) {
+    return res.status(404).json({
+      error: "Shared report not found"
+    });
+  }
+
+  return res.json(report);
+
+});
 
   app.use((err, req, res, next) => {
     if (err && err.message === "Not allowed by CORS") {

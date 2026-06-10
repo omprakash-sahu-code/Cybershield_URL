@@ -40,6 +40,7 @@ const team = [
 (function buildTeam() {
 
   const grid = document.getElementById('teamGrid');
+  if (!grid) return;
 
   grid.innerHTML = team.map(m => {
 
@@ -548,6 +549,12 @@ function showResult(type, title, desc, url, threats) {
           <div class="export-btns">
             <button type="button" onclick="downloadPDF()" class="export-btn export-btn-pdf" aria-label="Download scan report as PDF">⬇ Download PDF</button>
             <button type="button" onclick="downloadImage()" class="export-btn export-btn-img" aria-label="Download scan report as image">⬇ Download Image</button>
+            <button type="button"
+  onclick="shareReport()"
+  class="export-btn"
+  aria-label="Share scan report">
+  🔗 Share Report
+</button>
           </div>` : ''}
       </div>
     </div>`;
@@ -803,12 +810,18 @@ async function checkSecurity() {
       }
     }
 
-  } catch (err) {
-    showResult('error', 'Scan Error',
-      `An unexpected error occurred.<br>
-       <small style="color:#334155">Error: ${err.message}</small>`,
-      '', []);
-  } finally {
+} catch (err) {
+
+  showResult(
+    'error',
+    'Scan Error',
+    `An unexpected error occurred.<br>
+     <small style="color:#334155">Error: ${err.message}</small>`,
+    '',
+    []
+  );
+
+} finally {
     btn.disabled = false;
     btn.removeAttribute('aria-busy');
     btn.setAttribute('aria-label', 'Scan the entered URL for security threats');
@@ -914,3 +927,77 @@ async function downloadPDF() {
   }
 
 })();
+
+// ─────────────────────────────
+// SHARE REPORT
+// ─────────────────────────────
+
+async function shareReport() {
+
+  try {
+
+    const resultUrl =
+      document.querySelector('.result-url')?.textContent;
+
+    const resultTitle =
+      document.querySelector('.result-title')?.textContent;
+
+    const threatTags =
+      [...document.querySelectorAll('.threat-tag')]
+        .map(tag => tag.textContent);
+
+    const riskScore =
+      document.getElementById('animated-score')?.textContent || 0;
+
+    if (!resultUrl || !resultTitle) {
+      alert("No scan report available to share.");
+      return;
+    }
+
+    const apiHost =
+      (window.location.hostname === 'localhost' ||
+       window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:3002'
+      : 'https://cybershield-sxz0.onrender.com';
+
+    const response = await fetch(`${apiHost}/share`, {
+
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json'
+      },
+
+      body: JSON.stringify({
+        url: resultUrl,
+        resultType: resultTitle,
+        threats: threatTags,
+        riskScore
+      })
+
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to generate share link");
+    }
+
+    // Copy link automatically
+    await navigator.clipboard.writeText(data.shareUrl);
+
+    alert(
+      `Share link copied to clipboard!\n\n${data.shareUrl}`
+    );
+
+  } catch (err) {
+
+    console.error(err);
+
+    alert(
+      "Failed to share report."
+    );
+
+  }
+
+}
