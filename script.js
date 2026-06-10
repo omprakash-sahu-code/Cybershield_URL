@@ -14,6 +14,11 @@ window.addEventListener('load', () => {
     setTimeout(() => {
       loader.style.display = 'none';
       main.classList.remove('hidden');
+
+      // Move focus to main content after loader for screen readers
+      main.setAttribute('tabindex', '-1');
+      main.focus();
+
     }, 500);
 
   }, 3200);
@@ -44,13 +49,13 @@ const team = [
       .join('');
 
     return `
-      <div class="member-card">
+      <div class="member-card" role="listitem">
 
         <div class="member-avatar">
 
           <img
             src="${m.img}"
-            alt="${m.name}"
+            alt="${m.name} - Team Member"
             onerror="this.parentElement.innerHTML='${initials}'"
           >
 
@@ -64,6 +69,10 @@ const team = [
     `;
 
   }).join('');
+
+  // Add list role to grid for screen readers
+  grid.setAttribute('role', 'list');
+  grid.setAttribute('aria-label', 'Team members');
 
 })();
 
@@ -95,6 +104,168 @@ function toggleTeam() {
 }
 
 // ─────────────────────────────
+// SECURITY TIPS
+// ─────────────────────────────
+
+const TIPS = {
+
+  MALWARE: [
+    'Never download files or software from untrusted or unfamiliar websites.',
+    'Keep your antivirus software updated and run regular scans.',
+    'Avoid clicking links in unsolicited emails or messages — they may silently install malware.',
+    'Use a reputable ad blocker; malicious ads can trigger drive-by downloads.',
+    'Keep your OS and browser updated — patches close exploits malware relies on.',
+  ],
+
+  SOCIAL_ENGINEERING: [
+    'Legitimate websites never ask for your password via email or a popup.',
+    'Always check the full URL carefully — phishing sites mimic real ones with subtle typos.',
+    'Look for HTTPS and a valid padlock before entering any personal information.',
+    'When in doubt, go directly to the official website instead of clicking a link.',
+    'Enable two-factor authentication (2FA) so stolen passwords alone cannot access your accounts.',
+  ],
+
+  UNWANTED_SOFTWARE: [
+    'Only install software from official sources like verified app stores or developer sites.',
+    'Read permissions carefully before installing browser extensions or apps.',
+    'Regularly audit installed programs and remove anything you do not recognise.',
+    'Avoid "free" software bundles — they often include unwanted programs bundled silently.',
+    'Use a browser with built-in protection against unwanted software downloads.',
+  ],
+
+  POTENTIALLY_HARMFUL_APPLICATION: [
+    'Avoid sideloading apps from outside official stores unless you fully trust the source.',
+    'Check app reviews and publisher details before granting installation permissions.',
+    'Revoke unnecessary permissions for apps that request access to sensitive data.',
+    'Keep your device OS updated to protect against known app vulnerabilities.',
+    'Use a mobile security app to scan for potentially harmful applications.',
+  ],
+
+  general: [
+    'Use a password manager to generate and store strong, unique passwords.',
+    'Enable two-factor authentication on every account that supports it.',
+    'Regularly back up important data to an offline or encrypted cloud location.',
+    'Avoid using public Wi-Fi for banking or sensitive logins without a VPN.',
+    'Review your privacy settings on social media — oversharing aids social engineering.',
+    'Check "Have I Been Pwned" (haveibeenpwned.com) to see if your email was leaked.',
+    'Be sceptical of urgency — scammers manufacture time pressure to bypass your judgement.',
+    'Lock your devices with a strong PIN or biometric — physical access is a real threat.',
+    'Use a DNS-level blocker like 1.1.1.1 with filtering to block malicious domains.',
+    'Think before you click. Pause, inspect the URL, then decide.',
+  ],
+
+};
+
+// Tracks last shown general tip index to avoid repeats
+let lastGeneralTipIndex = -1;
+
+function getRandomTip(arr, lastIndex = -1) {
+  let index;
+  do {
+    index = Math.floor(Math.random() * arr.length);
+  } while (arr.length > 1 && index === lastIndex);
+  lastGeneralTipIndex = index;
+  return { tip: arr[index], index };
+}
+
+function buildTipsHtml(threatTypes) {
+
+  const isThreat = threatTypes && threatTypes.length > 0;
+
+  if (isThreat) {
+
+    // Collect unique tip sets for each detected threat type
+    const sections = [];
+
+    const threatLabels = {
+      MALWARE: { label: 'Malware', icon: '🦠' },
+      SOCIAL_ENGINEERING: { label: 'Phishing / Social Engineering', icon: '🎣' },
+      UNWANTED_SOFTWARE: { label: 'Unwanted Software', icon: '📦' },
+      POTENTIALLY_HARMFUL_APPLICATION: { label: 'Harmful Application', icon: '⚠️' },
+    };
+
+    threatTypes.forEach(threat => {
+      const tipPool = TIPS[threat];
+      if (!tipPool) return;
+
+      const meta = threatLabels[threat] || { label: threat, icon: '⚠️' };
+
+      // Pick 3 random non-repeating tips from the pool
+      const shuffled = [...tipPool].sort(() => Math.random() - 0.5).slice(0, 3);
+
+      sections.push(`
+        <div class="tips-threat-section">
+          <div class="tips-threat-label">
+            <span aria-hidden="true">${meta.icon}</span> ${meta.label} Tips
+          </div>
+          <ul class="tips-list" role="list">
+            ${shuffled.map(t => `<li role="listitem">${t}</li>`).join('')}
+          </ul>
+        </div>
+      `);
+    });
+
+    return `
+      <div class="tips-card danger-tips" role="region" aria-label="Safety tips for detected threats">
+        <div class="tips-header">
+          <span class="tips-header-icon" aria-hidden="true">🛡️</span>
+          <span class="tips-header-title">Stay Safe — What To Do Next</span>
+        </div>
+        <div class="tips-body">
+          ${sections.join('')}
+          <p class="tips-footer-note">Do <strong>not</strong> visit this URL. Report it to your IT team or via <a href="https://safebrowsing.google.com/safebrowsing/report_phish/" target="_blank" rel="noopener noreferrer">Google Safe Browsing Report</a>.</p>
+        </div>
+      </div>
+    `;
+
+  } else {
+
+    // Safe URL — show a random rotating general tip
+    const { tip } = getRandomTip(TIPS.general, lastGeneralTipIndex);
+
+    return `
+      <div class="tips-card safe-tips" role="region" aria-label="Cybersecurity awareness tip">
+        <div class="tips-header">
+          <span class="tips-header-icon" aria-hidden="true">💡</span>
+          <span class="tips-header-title">Cybersecurity Tip of the Scan</span>
+        </div>
+        <div class="tips-body">
+          <p class="tips-general-tip">${tip}</p>
+          <button type="button" class="tips-refresh-btn" onclick="refreshGeneralTip()" aria-label="Show another cybersecurity tip">
+            🔄 Show another tip
+          </button>
+        </div>
+      </div>
+    `;
+
+  }
+}
+
+function refreshGeneralTip() {
+  const { tip } = getRandomTip(TIPS.general, lastGeneralTipIndex);
+  const tipEl = document.querySelector('.tips-general-tip');
+  if (tipEl) {
+    tipEl.style.opacity = '0';
+    setTimeout(() => {
+      tipEl.textContent = tip;
+      tipEl.style.opacity = '1';
+    }, 200);
+  }
+}
+
+function showTips(threatTypes) {
+  const resultEl = document.getElementById('result');
+  if (!resultEl) return;
+
+  // Remove any existing tips card
+  const existing = resultEl.querySelector('.tips-card');
+  if (existing) existing.remove();
+
+  const tipsHtml = buildTipsHtml(threatTypes);
+  resultEl.insertAdjacentHTML('beforeend', tipsHtml);
+}
+
+// ─────────────────────────────
 // SCANNER
 // ─────────────────────────────
 
@@ -107,25 +278,7 @@ let dangerCount = 0;
 function isValidUrl(urlString) {
 
   try {
-    const urlObj = new URL(urlString);
-    const hostname = urlObj.hostname;
-
-    // To allow local testing
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return true;
-    }
-
-    const parts = hostname.split('.');
-    if (parts.length < 2) {
-      return false;
-    }
-
-    const tld = parts[parts.length - 1];
-    // TLD must be at least 2 chars & consist of only letters
-    if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
-      return false;
-    }
-
+    new URL(urlString);
     return true;
   } catch (e) {
     return false;
@@ -156,15 +309,6 @@ function formatAndValidateUrl(input) {
     !url.startsWith('https://')
   ) {
     url = 'https://' + url;
-  }
-
-  // Validate URL length
-  if (url.length > 2048) {
-    return {
-      valid: false,
-      error: 'URL exceeds maximum length of 2048 characters.',
-      url: null
-    };
   }
 
   if (!isValidUrl(url)) {
@@ -213,8 +357,12 @@ function formatAndValidateUrl(input) {
 
 function fillExample(url) {
 
-  document.getElementById('urlInput').value = url;
-  document.getElementById('urlInput').focus();
+  const input = document.getElementById('urlInput');
+  input.value = url;
+  input.focus();
+
+  // Update aria-label to reflect filled value for screen readers
+  input.setAttribute('aria-label', `URL input, filled with ${url}. Press Enter or click Scan URL to scan.`);
 
 }
 
@@ -288,7 +436,7 @@ function calculateRiskScore(url, isThreat) {
       score += 10;
       breakdown.push({ text: 'Excessive subdomains used', type: 'warning' });
     } else {
-      breakdown.push({ text: 'Domain structure appears normal', type: 'safe' });
+       breakdown.push({ text: 'Domain structure appears normal', type: 'safe' });
     }
   } catch (e) {
     score += 20;
@@ -312,6 +460,14 @@ function showResult(type, title, desc, url, threats) {
     error: '!'
   };
 
+  // Map result type to human-readable label for screen readers
+  const ariaLabels = {
+    safe: 'Safe',
+    danger: 'Danger',
+    error: 'Error',
+    loading: 'Loading'
+  };
+
   const isThreat = type === 'danger';
   let riskSectionHtml = '';
   let riskData = null;
@@ -325,31 +481,39 @@ function showResult(type, title, desc, url, threats) {
 
     let breakdownHtml = riskData.breakdown.map(item => {
       let icon = '';
-      if (item.type === 'safe') icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffb4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-      else if (item.type === 'warning') icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
-      else if (item.type === 'danger') icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+      let iconLabel = '';
+      if (item.type === 'safe') {
+        icon = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00ffb4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        iconLabel = 'Safe';
+      } else if (item.type === 'warning') {
+        icon = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+        iconLabel = 'Warning';
+      } else if (item.type === 'danger') {
+        icon = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+        iconLabel = 'Danger';
+      }
 
-      return `<div class="breakdown-item ${item.type}">${icon} <span>${item.text}</span></div>`;
+      return `<div class="breakdown-item ${item.type}" role="listitem"><span class="sr-only">${iconLabel}:</span>${icon} <span>${item.text}</span></div>`;
     }).join('');
 
     riskSectionHtml = `
-      <div class="risk-analysis">
+      <div class="risk-analysis" role="region" aria-label="Risk Analysis">
         <div class="risk-header">
           <div class="risk-stat">
-            <div class="risk-stat-value" style="color: ${meterColor}"><span id="animated-score">0</span><span class="risk-stat-max">/100</span></div>
+            <div class="risk-stat-value" style="color: ${meterColor}"><span id="animated-score" aria-label="Risk score">0</span><span class="risk-stat-max" aria-hidden="true">/100</span></div>
             <div class="risk-stat-label">Risk Score</div>
           </div>
           <div class="risk-stat">
-            <div class="risk-stat-value"><span id="animated-confidence">0</span>%</div>
+            <div class="risk-stat-value"><span id="animated-confidence" aria-label="Confidence percentage">0</span>%</div>
             <div class="risk-stat-label">Confidence</div>
           </div>
         </div>
-        
-        <div class="risk-meter-wrap">
+
+        <div class="risk-meter-wrap" role="progressbar" aria-valuenow="${riskData.score}" aria-valuemin="0" aria-valuemax="100" aria-label="Risk level meter">
           <div class="risk-meter-bar" style="width: 0%; background-color: ${meterColor};" data-target-width="${riskData.score}%"></div>
         </div>
 
-        <div class="risk-breakdown">
+        <div class="risk-breakdown" role="list" aria-label="Risk breakdown details">
           ${breakdownHtml}
         </div>
       </div>
@@ -358,36 +522,45 @@ function showResult(type, title, desc, url, threats) {
 
   document.getElementById('result').innerHTML = `
 
-    <div class="result-card ${type}">
+    <div class="result-card ${type}" role="region" aria-label="Scan result: ${ariaLabels[type] || type}">
 
-      <div class="result-icon">
+      <div class="result-icon" aria-hidden="true">
 
-        ${type === 'loading'
-      ? '<div class="spinner"></div>'
-      : type === 'scan-loading'
-        ? ''
-        : `<span>${icons[type]}</span>`
-    }
+        ${
+          type === 'loading'
+            ? '<div class="spinner"></div>'
+            : type === 'scan-loading'
+            ? ''
+            : `<span>${icons[type]}</span>`
+        }
 
       </div>
 
       <div class="result-body">
         <div class="result-title">${title}</div>
         <div class="result-desc">${desc}</div>
-        ${url ? `<div class="result-url">${url}</div>` : ''}
+        ${url ? `<div class="result-url" aria-label="Scanned URL: ${url}">${url}</div>` : ''}
         ${threats && threats.length
-      ? `<div class="threat-tags">${threats.map(t =>
-        `<span class="threat-tag">${t}</span>`).join('')}</div>`
-      : ''}
+          ? `<div class="threat-tags" role="list" aria-label="Detected threats">${threats.map(t =>
+              `<span class="threat-tag" role="listitem">${t}</span>`).join('')}</div>`
+          : ''}
         ${(type === 'safe' || type === 'danger') ? `
           <div class="export-btns">
-            <button onclick="downloadPDF()" class="export-btn export-btn-pdf">⬇ Download PDF</button>
-            <button onclick="downloadImage()" class="export-btn export-btn-img">⬇ Download Image</button>
+            <button type="button" onclick="downloadPDF()" class="export-btn export-btn-pdf" aria-label="Download scan report as PDF">⬇ Download PDF</button>
+            <button type="button" onclick="downloadImage()" class="export-btn export-btn-img" aria-label="Download scan report as image">⬇ Download Image</button>
           </div>` : ''}
       </div>
     </div>`;
 
+  // Move focus to result div so screen readers announce the outcome
+  const resultEl = document.getElementById('result');
+  resultEl.setAttribute('tabindex', '-1');
+  resultEl.focus();
+
   if (riskSectionHtml) {
+    // Append risk section inside result div, after the result card
+    resultEl.insertAdjacentHTML('beforeend', riskSectionHtml);
+
     setTimeout(() => {
       const bar = document.querySelector('.risk-meter-bar');
       if (bar) {
@@ -469,27 +642,29 @@ async function checkSecurity() {
     document.getElementById('scanBtn');
 
   btn.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
+  btn.setAttribute('aria-label', 'Scanning URL, please wait...');
 
   // Loading State — enhanced scan animation
 
   document.getElementById('result').innerHTML = `
-    <div class="result-card loading">
+    <div class="result-card loading" role="status" aria-live="polite" aria-label="Scanning in progress">
       <div class="result-body">
         <div class="scan-loading">
-          <div class="scan-shield-wrap">
+          <div class="scan-shield-wrap" aria-hidden="true">
             <div class="scan-shield-ring-outer"></div>
             <div class="scan-shield-ring"></div>
             <div class="scan-shield-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="1.8">
+              <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="1.8">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
             </div>
           </div>
           <div>
             <div class="result-title" style="text-align:center;">Scanning URL...</div>
-            <div class="result-url" style="text-align:center;margin-top:8px;">${url}</div>
+            <div class="result-url" style="text-align:center;margin-top:8px;" aria-label="URL being scanned: ${url}">${url}</div>
           </div>
-          <div class="scan-progress-wrap">
+          <div class="scan-progress-wrap" aria-hidden="true">
             <div class="scan-progress-bar">
               <div class="scan-progress-fill"></div>
             </div>
@@ -545,23 +720,37 @@ async function checkSecurity() {
       updateStats('danger');
       showResult('danger', 'Threat Detected!',
         `This URL is flagged as dangerous. Do not visit it.<br><br>
-        <div class="breakdown">
-          <div class="breakdown-item">
-            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure'}
+        <div class="breakdown" role="list" aria-label="Security breakdown">
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${isHttps ? '✅' : '⚠️'}</span>
+            <span class="sr-only">${isHttps ? 'Secure' : 'Insecure'}:</span>
+            <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure'}
           </div>
-          <div class="breakdown-item">
-            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasMalware ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasMalware ? 'Detected' : 'Clear'}:</span>
+            <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasPhishing ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasPhishing ? 'Detected' : 'Clear'}:</span>
+            <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasUnwanted ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasUnwanted ? 'Detected' : 'Clear'}:</span>
+            <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasHarmful ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasHarmful ? 'Detected' : 'Clear'}:</span>
+            <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
         </div>`, url, threats);
+
+      // Show threat-specific tips
+      showTips(allThreats);
+
     } else {
       updateStats('safe');
       const urlObj = new URL(url);
@@ -574,23 +763,36 @@ async function checkSecurity() {
 
       showResult('safe', 'URL is Safe',
         `No threats detected. Google Safe Browsing found no issues.<br><br>
-        <div class="breakdown">
-          <div class="breakdown-item">
-            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure — use with caution'}
+        <div class="breakdown" role="list" aria-label="Security breakdown">
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${isHttps ? '✅' : '⚠️'}</span>
+            <span class="sr-only">${isHttps ? 'Secure' : 'Warning'}:</span>
+            <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure — use with caution'}
           </div>
-          <div class="breakdown-item">
-            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasMalware ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasMalware ? 'Detected' : 'Clear'}:</span>
+            <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasPhishing ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasPhishing ? 'Detected' : 'Clear'}:</span>
+            <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasUnwanted ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasUnwanted ? 'Detected' : 'Clear'}:</span>
+            <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
           </div>
-          <div class="breakdown-item">
-            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
+          <div class="breakdown-item" role="listitem">
+            <span aria-hidden="true">${hasHarmful ? '🔴' : '✅'}</span>
+            <span class="sr-only">${hasHarmful ? 'Detected' : 'Clear'}:</span>
+            <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
         </div>`, url, []);
+
+      // Show rotating general tip
+      showTips([]);
     }
 
     if (data.typosquatting) {
@@ -608,7 +810,8 @@ async function checkSecurity() {
       '', []);
   } finally {
     btn.disabled = false;
-
+    btn.removeAttribute('aria-busy');
+    btn.setAttribute('aria-label', 'Scan the entered URL for security threats');
   }
 
 }
@@ -616,6 +819,7 @@ async function checkSecurity() {
 document.getElementById('urlInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') checkSecurity();
 });
+
 async function captureReport() {
   const card = document.querySelector('#result .result-card');
   if (!card) return null;
@@ -627,6 +831,7 @@ async function captureReport() {
     background: #1e293b; border-radius: 12px;
     font-family: sans-serif; color: #f1f5f9;
   `;
+  reportDiv.setAttribute('aria-hidden', 'true');
   reportDiv.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
       <div style="background:#0f766e;width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;">🛡️</div>
@@ -672,323 +877,6 @@ async function downloadPDF() {
 }
 
 // ─────────────────────────────
-// TYPOSQUATTING FAMILY TREE
-// ─────────────────────────────
-
-function renderFamilyTree(typosquattingData) {
-  const container = document.getElementById('treeContainer');
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  const original = typosquattingData.original;
-  const variants = typosquattingData.variants;
-
-  if (!variants || variants.length === 0) {
-    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8;">No typosquatting variants generated for this domain.</div>';
-    return;
-  }
-
-  const categoriesMap = {
-    homoglyph: { name: "Homoglyphs", children: [] },
-    tld: { name: "TLD Swaps", children: [] },
-    substitution: { name: "Substitutions", children: [] },
-    hyphen: { name: "Hyphen Injections", children: [] }
-  };
-
-  variants.forEach(v => {
-    if (categoriesMap[v.category]) {
-      categoriesMap[v.category].children.push({
-        name: v.domain,
-        type: "variant",
-        threat: v.threat,
-        distance: v.distance,
-        category: v.category
-      });
-    }
-  });
-
-  const rootChildren = Object.values(categoriesMap).filter(cat => cat.children.length > 0);
-
-  const rootData = {
-    name: original.domain,
-    type: "original",
-    threat: original.threat,
-    children: rootChildren.map(cat => ({
-      name: cat.name,
-      type: "category",
-      children: cat.children
-    }))
-  };
-
-  const margin = { top: 20, right: 120, bottom: 20, left: 120 };
-  const width = container.clientWidth || 800;
-  const height = 450;
-  const innerWidth = width - margin.left - margin.right;
-  const innerHeight = height - margin.top - margin.bottom;
-
-  const svg = d3.select(container)
-    .append("svg")
-    .attr("width", "100%")
-    .attr("height", height)
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .style("overflow", "visible")
-    .append("g")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-  let i = 0;
-  const treemap = d3.tree().size([innerHeight, innerWidth]);
-
-  const root = d3.hierarchy(rootData);
-  root.x0 = innerHeight / 2;
-  root.y0 = 0;
-
-  let tooltip = document.getElementById("tree-tooltip");
-  if (!tooltip) {
-    tooltip = document.createElement("div");
-    tooltip.id = "tree-tooltip";
-    tooltip.className = "tree-tooltip";
-    tooltip.style.cssText = `
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 12px;
-      color: #f1f5f9;
-      font-size: 0.85rem;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-      z-index: 1000;
-      transition: opacity 0.2s ease;
-      min-width: 220px;
-    `;
-    container.appendChild(tooltip);
-  }
-
-  function highlightHomoglyphs(domain, originalDomain) {
-    let highlightedHtml = '';
-    let hasHomoglyphHighlight = false;
-    
-    for (let idx = 0; idx < domain.length; idx++) {
-      const char = domain[idx];
-      const code = char.charCodeAt(0);
-      
-      const isNonAscii = code > 127;
-      const isDifferent = originalDomain && originalDomain[idx] !== char;
-      
-      if (isNonAscii && isDifferent) {
-        highlightedHtml += `<span style="color: #f87171; font-weight: bold; text-decoration: underline;" title="Unicode U+${code.toString(16).toUpperCase()}">${char}</span>`;
-        hasHomoglyphHighlight = true;
-      } else {
-        highlightedHtml += char;
-      }
-    }
-    return { html: highlightedHtml, detected: hasHomoglyphHighlight };
-  }
-
-  function showTooltip(event, data) {
-    const rect = container.getBoundingClientRect();
-    const x = event.clientX - rect.left + 15;
-    const y = event.clientY - rect.top + 15;
-
-    let threatText = "";
-    let threatColor = "";
-    let desc = "";
-
-    if (data.type === "original") {
-      threatText = data.threat === "malicious" ? "Malicious (Flagged)" : "Safe";
-      threatColor = data.threat === "malicious" ? "#ef4444" : "#10b981";
-      desc = "The original target domain analyzed by Google Safe Browsing.";
-    } else {
-      threatText = data.threat === "malicious" ? "Malicious (Flagged)" : "Suspicious Typosquatting Candidate";
-      threatColor = data.threat === "malicious" ? "#ef4444" : "#f59e0b";
-      
-      const catDescriptions = {
-        homoglyph: "Visual look-alike representations (IDN homograph attack vector) designed to deceive.",
-        tld: "TLD replacement targeting keyboard extensions or common domain mistakes.",
-        substitution: "Common keyboard layout substitutions targeting spelling typos.",
-        hyphen: "Plausible spacing or prefix hyphen variations."
-      };
-      desc = catDescriptions[data.category] || "Variant domain variation.";
-    }
-
-    let displayName = data.name;
-    let homoglyphNote = '';
-    if (data.type === "variant" && data.category === "homoglyph") {
-      const highlightResult = highlightHomoglyphs(data.name, original.domain);
-      if (highlightResult.detected) {
-        displayName = highlightResult.html;
-        homoglyphNote = `<div style="font-size: 0.75rem; color: #f87171; margin-top: 8px; line-height: 1.3; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;">⚠️ Underlined character is a look-alike Unicode homoglyph.</div>`;
-      }
-    }
-
-    tooltip.innerHTML = `
-      <div style="font-weight: bold; color: #fff; margin-bottom: 4px; word-break: break-all;">${displayName}</div>
-      <div style="margin-bottom: 6px;">
-        <span style="font-size: 0.75rem; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #cbd5e1;">
-          ${data.type === "original" ? "Original Target" : "Variant"}
-        </span>
-      </div>
-      <div style="margin-bottom: 6px; font-size: 0.8rem;">
-        <b>Threat Level:</b> <span style="color: ${threatColor}; font-weight: bold;">${threatText}</span>
-      </div>
-      ${data.type !== "original" ? `<div style="margin-bottom: 6px; font-size: 0.8rem;"><b>Edit Distance:</b> Levenshtein ${data.distance}</div>` : ""}
-      <div style="font-size: 0.75rem; color: #94a3b8; line-height: 1.4;">${desc}</div>
-      ${homoglyphNote}
-    `;
-
-    tooltip.style.left = `${x}px`;
-    tooltip.style.top = `${y}px`;
-    tooltip.style.opacity = "1";
-  }
-
-  function hideTooltip() {
-    tooltip.style.opacity = "0";
-  }
-
-  function update(source) {
-    const treeData = treemap(root);
-    const nodes = treeData.descendants();
-    const links = treeData.descendants().slice(1);
-
-    nodes.forEach(d => { d.y = d.depth * 180; });
-
-    const node = svg.selectAll("g.node")
-      .data(nodes, d => d.id || (d.id = ++i));
-
-    const nodeEnter = node.enter().append("g")
-      .attr("class", "node")
-      .attr("transform", d => `translate(${source.y0},${source.x0})`)
-      .on("click", (event, d) => {
-        if (d.data.type === "category") {
-          if (d.children) {
-            d._children = d.children;
-            d.children = null;
-          } else {
-            d.children = d._children;
-            d._children = null;
-          }
-          update(d);
-        }
-      });
-
-    nodeEnter.append("circle")
-      .attr("class", d => `node-circle ${d.data.threat || ""} ${d.data.type}`)
-      .attr("r", d => d.data.type === "original" ? 10 : d.data.type === "category" ? 7 : 5)
-      .style("cursor", d => d.data.type === "category" ? "pointer" : "default")
-      .style("fill", d => {
-        if (d.data.type === "original") return "var(--accent-1)";
-        if (d.data.type === "category") return "#94a3b8";
-        if (d.data.threat === "malicious") return "#ef4444";
-        if (d.data.threat === "suspicious") return "#f59e0b";
-        return "#10b981";
-      })
-      .style("stroke", d => {
-        if (d.data.type === "original") return "rgba(0, 255, 180, 0.4)";
-        if (d.data.type === "category") return "rgba(255, 255, 255, 0.2)";
-        return "none";
-      })
-      .style("stroke-width", "4px");
-
-    nodeEnter.append("text")
-      .attr("dy", ".35em")
-      .attr("x", d => d.children || d._children ? -13 : 13)
-      .attr("text-anchor", d => d.children || d._children ? "end" : "start")
-      .text(d => d.data.name)
-      .style("fill", "#f1f5f9")
-      .style("font-family", "sans-serif")
-      .style("font-size", d => d.data.type === "original" ? "12px" : d.data.type === "category" ? "11px" : "10px")
-      .style("font-weight", d => d.data.type === "original" || d.data.type === "category" ? "bold" : "normal")
-      .style("pointer-events", "none")
-      .style("text-shadow", "0 1px 3px rgba(0,0,0,0.8)");
-
-    const nodeUpdate = nodeEnter.merge(node);
-
-    nodeUpdate.transition()
-      .duration(500)
-      .attr("transform", d => `translate(${d.y},${d.x})`);
-
-    nodeUpdate.select("circle")
-      .attr("r", d => d.data.type === "original" ? 10 : d.data.type === "category" ? 7 : 5)
-      .style("fill", d => {
-        if (d.data.type === "original") return "var(--accent-1)";
-        if (d.data.type === "category") {
-          return d._children ? "var(--accent-1)" : "#64748b";
-        }
-        if (d.data.threat === "malicious") return "#ef4444";
-        if (d.data.threat === "suspicious") return "#f59e0b";
-        return "#10b981";
-      });
-
-    const nodeExit = node.exit().transition()
-      .duration(500)
-      .attr("transform", d => `translate(${source.y},${source.x})`)
-      .remove();
-
-    nodeExit.select("circle").attr("r", 0);
-    nodeExit.select("text").style("fill-opacity", 0);
-
-    const link = svg.selectAll("path.link")
-      .data(links, d => d.id);
-
-    const linkEnter = link.enter().insert("path", "g")
-      .attr("class", "link")
-      .attr("d", d => {
-        const o = { x: source.x0, y: source.y0 };
-        return diagonal(o, o);
-      })
-      .style("fill", "none")
-      .style("stroke", "rgba(148, 163, 184, 0.2)")
-      .style("stroke-width", "1.5px");
-
-    const linkUpdate = linkEnter.merge(link);
-
-    linkUpdate.transition()
-      .duration(500)
-      .attr("d", d => diagonal(d, d.parent))
-      .style("stroke", d => {
-        if (d.data.threat === "malicious") return "rgba(239, 68, 68, 0.3)";
-        if (d.data.threat === "suspicious") return "rgba(245, 158, 11, 0.3)";
-        if (d.data.type === "category") return "rgba(148, 163, 184, 0.15)";
-        return "rgba(16, 185, 129, 0.3)";
-      });
-
-    link.exit().transition()
-      .duration(500)
-      .attr("d", d => {
-        const o = { x: source.x, y: source.y };
-        return diagonal(o, o);
-      })
-      .remove();
-
-    nodes.forEach(d => {
-      d.x0 = d.x;
-      d.y0 = d.y;
-    });
-
-    nodeUpdate
-      .filter(d => d.data.type === "variant" || d.data.type === "original")
-      .on("mouseover", (event, d) => {
-        showTooltip(event, d.data);
-      })
-      .on("mouseout", () => {
-        hideTooltip();
-      });
-  }
-
-  function diagonal(s, d) {
-    return `M ${s.y} ${s.x}
-            C ${(s.y + d.y) / 2} ${s.x},
-              ${(s.y + d.y) / 2} ${d.x},
-              ${d.y} ${d.x}`;
-  }
-
-  update(root);
-}
-
-// ─────────────────────────────
 // THEME TOGGLE
 // ─────────────────────────────
 
@@ -1009,10 +897,18 @@ function renderFamilyTree(typosquattingData) {
   function applyTheme(theme) {
     if (theme === 'light') {
       document.documentElement.classList.add('light-mode');
-      if (btn) btn.textContent = '☀️';
+      if (btn) {
+        btn.textContent = '☀️';
+        btn.setAttribute('aria-label', 'Switch to dark mode');
+        btn.setAttribute('aria-pressed', 'false');
+      }
     } else {
       document.documentElement.classList.remove('light-mode');
-      if (btn) btn.textContent = '🌙';
+      if (btn) {
+        btn.textContent = '🌙';
+        btn.setAttribute('aria-label', 'Switch to light mode');
+        btn.setAttribute('aria-pressed', 'true');
+      }
     }
     localStorage.setItem('theme', theme);
   }
