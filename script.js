@@ -633,6 +633,11 @@ async function checkSecurity() {
 
   const url = validation.url;
 
+  const typoCard = document.getElementById('typosquattingCard');
+  if (typoCard) {
+    typoCard.classList.add('hidden');
+  }
+
   const btn =
     document.getElementById('scanBtn');
 
@@ -691,7 +696,7 @@ async function checkSecurity() {
 
   try {
     const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:3000'
+      ? 'http://localhost:3002'
       : 'https://cybershield-sxz0.onrender.com';
     const response = await fetch(`${apiHost}/check`, {
       method: 'POST',
@@ -788,6 +793,14 @@ async function checkSecurity() {
 
       // Show rotating general tip
       showTips([]);
+    }
+
+    if (data.typosquatting) {
+      const typoCard = document.getElementById('typosquattingCard');
+      if (typoCard) {
+        typoCard.classList.remove('hidden');
+        renderFamilyTree(data.typosquatting);
+      }
     }
 
   } catch (err) {
