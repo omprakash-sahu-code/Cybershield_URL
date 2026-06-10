@@ -529,9 +529,17 @@ async function checkSecurity() {
       body: JSON.stringify({ url })
     });
 
-    if (!response.ok) throw new Error('Server error ' + response.status);
-    const data = await response.json();
-    if (data.error) throw new Error(data.error);
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      // Fallback
+    }
+
+    if (!response.ok) {
+      throw new Error(data && data.error ? data.error : 'Server error ' + response.status);
+    }
+    if (data && data.error) throw new Error(data.error);
 
     if (data.matches && data.matches.length > 0) {
       const allThreats = data.matches.map(m => m.threatType);
@@ -1018,3 +1026,176 @@ function renderFamilyTree(typosquattingData) {
   }
 
 })();
+
+// ─────────────────────────────
+// SCREENSHOT URL SCANNER UPLOAD
+// ─────────────────────────────
+
+(function initScreenshotScanner() {
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+  const uploadContent = document.getElementById('uploadContent');
+  const uploadPreview = document.getElementById('uploadPreview');
+  const previewImage = document.getElementById('previewImage');
+  const previewStatus = document.getElementById('previewStatus');
+  const urlInput = document.getElementById('urlInput');
+
+  if (!uploadZone || !fileInput) return;
+
+  // Clicking on drop zone triggers file input click
+  uploadZone.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'INPUT') {
+      fileInput.click();
+    }
+  });
+
+  // Handle keyboard interaction for accessibility
+  uploadZone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fileInput.click();
+    }
+  });
+
+  // Prevent default drag behaviors
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadZone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+  });
+
+  // Highlight drop zone when item is dragged over it
+  ['dragenter', 'dragover'].forEach(eventName => {
+    uploadZone.addEventListener(eventName, highlight, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    uploadZone.addEventListener(eventName, unhighlight, false);
+  });
+
+  // Handle dropped files
+  uploadZone.addEventListener('drop', handleDrop, false);
+
+  // Handle browse files
+  fileInput.addEventListener('change', handleFiles, false);
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function highlight() {
+    uploadZone.classList.add('dragover');
+  }
+
+  function unhighlight() {
+    uploadZone.classList.remove('dragover');
+  }
+
+  function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length) {
+      processFiles(files[0]);
+    }
+  }
+
+  function handleFiles(e) {
+    const files = e.target.files;
+    if (files.length) {
+      processFiles(files[0]);
+    }
+  }
+
+  function processFiles(file) {
+    if (!file.type.startsWith('image/')) {
+      showError('Please upload an image file (PNG, JPG, JPEG, WEBP).');
+      return;
+    }
+
+    // Reset styles
+    uploadZone.classList.remove('upload-error', 'upload-success');
+    
+    // Show preview and loading state
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = function() {
+      const base64Data = reader.result;
+      previewImage.src = base64Data;
+      
+      // Toggle visibility
+      uploadContent.classList.add('hidden');
+      uploadPreview.classList.remove('hidden');
+      previewStatus.textContent = 'Scanning image...';
+
+      // Send to OCR API
+      extractUrlFromImage(base64Data);
+    };
+  }
+
+  async function extractUrlFromImage(base64Data) {
+    try {
+      const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:3002'
+        : 'https://cybershield-sxz0.onrender.com';
+      
+      const response = await fetch(`${apiHost}/api/extract-url`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ image: base64Data })
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        // ignore
+      }
+
+      if (!response.ok) {
+        throw new Error(data && data.error ? data.error : 'API server error: ' + response.status);
+      }
+
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
+
+      if (data.url) {
+        previewStatus.textContent = 'URL Found!';
+        uploadZone.classList.add('upload-success');
+        urlInput.value = data.url;
+        
+        // Brief pause for visual feedback, then scan
+        setTimeout(() => {
+          resetZone();
+          checkSecurity();
+        }, 1200);
+      } else {
+        showError('No URL detected in the image.');
+      }
+    } catch (err) {
+      console.error('[OCR Error]', err);
+      showError(err.message || 'Failed to analyze the image.');
+    }
+  }
+
+  function showError(msg) {
+    previewStatus.textContent = msg;
+    uploadZone.classList.add('upload-error');
+    
+    // Auto reset back to default upload state after 3 seconds
+    setTimeout(() => {
+      resetZone();
+    }, 3000);
+  }
+
+  function resetZone() {
+    uploadZone.classList.remove('upload-error', 'upload-success');
+    uploadContent.classList.remove('hidden');
+    uploadPreview.classList.add('hidden');
+    previewImage.src = '';
+    fileInput.value = '';
+  }
+})();
+

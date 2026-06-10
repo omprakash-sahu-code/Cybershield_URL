@@ -40,6 +40,8 @@ const REQUEST_RETRIES = toNonNegativeInteger(process.env.REQUEST_RETRIES, 2);
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://cybershield-url.netlify.app",
   "http://localhost:3000",
+  "http://localhost:3002",
+  "http://127.0.0.1:3002",
   "http://localhost:5500",
   "http://127.0.0.1:5500"
 ];
@@ -354,7 +356,9 @@ function createApp(options = {}) {
     allowedHeaders: ["Content-Type"]
   }));
 
-  app.use(express.json());
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express.static(__dirname));
 
   app.get("/", (req, res) => {
     res.json({ status: "CyberShield backend running", port: PORT });
@@ -581,6 +585,96 @@ function createApp(options = {}) {
       });
     } catch (fetchErr) {
       console.error("[GEMINI FETCH ERROR]", fetchErr);
+      return res.status(500).json({
+        error: "Failed to fetch response from Gemini backend",
+        detail: fetchErr.message
+      });
+    }
+  });
+
+  app.post("/api/extract-url", async (req, res) => {
+    const { image } = req.body;
+
+    if (!image || typeof image !== "string") {
+      return res.status(400).json({ error: "No image data provided" });
+    }
+
+    const matches = image.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) {
+      return res.status(400).json({ error: "Invalid image data format. Must be a base64 data URL" });
+    }
+
+    if (!geminiKey) {
+      return res.status(500).json({ error: "Missing Gemini API key configuration" });
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+
+    try {
+      const fetchImpl = options.fetchImpl || fetch;
+      const response = await fetchImpl(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: "You are a scanner that extracts the main URL or web address present in this screenshot or image. Extract ONLY the URL. If there are multiple URLs, return the most prominent or first one. If no URL is found, return 'NONE'. Do not include markdown block syntax, explanation, or extra text. Output only the raw URL, for example 'https://example.com' or 'http://test.com' or 'NONE'."
+                  },
+                  {
+                    inlineData: {
+                      mimeType: mimeType,
+                      data: base64Data
+                    }
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 100
+            }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`[GEMINI OCR API ERROR] Status ${response.status}:`, errText);
+        return res.status(502).json({
+          error: `Gemini API error: ${response.status}`,
+          detail: "Failed to process image with LLM backend"
+        });
+      }
+
+      const responseData = await response.json();
+      if (
+        responseData.candidates &&
+        responseData.candidates[0] &&
+        responseData.candidates[0].content &&
+        responseData.candidates[0].content.parts &&
+        responseData.candidates[0].content.parts[0]
+      ) {
+        const text = responseData.candidates[0].content.parts[0].text.trim();
+        console.log(`[OCR RESULT] Extracted: "${text}"`);
+        if (text === "NONE" || text.toLowerCase() === "none") {
+          return res.json({ url: null });
+        }
+        return res.json({ url: text });
+      }
+
+      return res.status(502).json({
+        error: "Empty content returned from LLM service",
+        detail: "No candidates returned"
+      });
+    } catch (fetchErr) {
+      console.error("[GEMINI OCR FETCH ERROR]", fetchErr);
       return res.status(500).json({
         error: "Failed to fetch response from Gemini backend",
         detail: fetchErr.message
