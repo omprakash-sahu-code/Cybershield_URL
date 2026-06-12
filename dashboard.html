@@ -28,47 +28,40 @@
         CyberShield Analytics
       </div>
       <h1>Threat Analytics Dashboard</h1>
-      <p class="subtitle">Track your historical URL scans, threat detection trends, and export logs for deeper analysis.</p>
+      <p class="subtitle">Track your historical URL scans, threat detection trends, and real-time safe metrics.</p>
     </header>
 
-    <div class="dashboard-cta" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+    <div class="dashboard-cta">
       <a class="scan-btn" href="index.html">Back to URL Scanner</a>
-      <a class="scan-btn" href="chat.html" style="background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color: #0f172a;">💬 Scam Detector Chat</a>
+      <button class="scan-btn" id="clearHistoryBtn" style="background:#f87171; color:#0f172a; margin-left:10px; border:none; cursor:pointer; font-weight:600;">Clear Scan Log</button>
+    </div>
+
+    <div class="stats-row" style="margin-bottom: 24px; display: flex; gap: 16px; width: 100%;">
+      <div class="stat-card" style="flex: 1;">
+        <div class="stat-num" id="dbTotalScans">0</div>
+        <div class="stat-label">Total Historical Scans</div>
+      </div>
+      <div class="stat-card" style="flex: 1;">
+        <div class="stat-num" id="dbSafeRatio">0%</div>
+        <div class="stat-label">Safe Scan Ratio</div>
+      </div>
+      <div class="stat-card" style="flex: 1;">
+        <div class="stat-num" id="dbThreatsBlocked">0</div>
+        <div class="stat-label">Total Threats Intercepted</div>
+      </div>
     </div>
 
     <div class="dashboard-grid">
-      <section class="dashboard-card">
-        <h2>Feature Description</h2>
-        <p>CyberShield currently scans URLs in real time and reports whether they are safe or malicious. The Threat Analytics Dashboard adds historical visibility and actionable insight to that workflow.</p>
-
-        <ul>
-          <li>View past scan results with timestamps and outcomes</li>
-          <li>Track frequency of phishing and malware detections over time</li>
-          <li>Visualize data with charts such as bar graphs and line graphs</li>
-          <li>Export logs for further offline analysis</li>
-        </ul>
-
-        <h3>Proposed Solution</h3>
-        <ul>
-          <li>Create a new dashboard page: <code>dashboard.html</code></li>
-          <li>Use <strong>Chart.js</strong> or <strong>D3.js</strong> for visualization</li>
-          <li>Store scan results in local storage for demo purposes</li>
-          <li>Plan for backend DB persistence in a future release</li>
-          <li>Add a navigation link from the main page to the dashboard</li>
-        </ul>
-      </section>
-
-      <section class="dashboard-card">
-        <h2>Demo Visualization</h2>
-        <div class="chart-card">
-          <p>Interactive scanner threat analysis charts:</p>
-          <canvas id="analyticsChart" style="max-height: 250px; width: 100%;"></canvas>
+      <section class="dashboard-card" style="grid-column: span 2;">
+        <h2>Interactive Threat Distribution</h2>
+        <div class="chart-card" style="position: relative; height:300px; width: 100%;">
+          <canvas id="analyticsChart"></canvas>
         </div>
       </section>
 
       <section class="dashboard-card dashboard-note">
-        <h2>Demo Mode</h2>
-        <p>In the demo version, scan records are stored locally in the browser. A backend database can be added later to persist results and support long-term analytics.</p>
+        <h2>Persistence Engine Details</h2>
+        <p>Telemetry metrics are extracted directly from secure local repository storage structures. Clear your browser cache or use the provided control to purge logs.</p>
       </section>
     </div>
 
@@ -82,7 +75,6 @@
           <div class="footer-col">
             <h4>Navigation</h4>
             <a href="index.html">Home</a>
-            <a href="chat.html">Scam Detector Chat</a>
             <a href="docs.html">Documentation</a>
           </div>
         </div>
@@ -94,14 +86,42 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      const history = JSON.parse(localStorage.getItem('cybershield_history')) || [];
+      
+      const totalScans = history.length;
+      const safeScans = history.filter(item => item.status === 'safe').length;
+      const threatScans = history.filter(item => item.status === 'danger').length;
+      const safeRatio = totalScans > 0 ? Math.round((safeScans / totalScans) * 100) : 0;
+      
+      // Inject processed metrics directly into target DOM elements
+      document.getElementById('dbTotalScans').textContent = totalScans;
+      document.getElementById('dbThreatsBlocked').textContent = threatScans;
+      document.getElementById('dbSafeRatio').textContent = `${safeRatio}%`;
+
+      let malwareCount = 0;
+      let phishingCount = 0;
+      let unwantedCount = 0;
+      let harmfulCount = 0;
+
+      history.forEach(record => {
+        if (record.threats && Array.isArray(record.threats)) {
+          record.threats.forEach(t => {
+            if (t === 'MALWARE') malwareCount++;
+            if (t === 'SOCIAL_ENGINEERING') phishingCount++;
+            if (t === 'UNWANTED_SOFTWARE') unwantedCount++;
+            if (t === 'POTENTIALLY_HARMFUL_APPLICATION') harmfulCount++;
+          });
+        }
+      });
+
       const ctx = document.getElementById('analyticsChart').getContext('2d');
       new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ['Safe Scan', 'Malware Detected', 'Phishing Detected', 'Unwanted App'],
+          labels: ['Safe Scans', 'Malware', 'Phishing Detections', 'Unwanted/Harmful Apps'],
           datasets: [{
-            label: 'Threat Identifications',
-            data: [65, 12, 19, 3],
+            label: 'Activity Identifications',
+            data: [safeScans, malwareCount, phishingCount, (unwantedCount + harmfulCount)],
             backgroundColor: [
               'rgba(0, 255, 180, 0.6)',
               'rgba(248, 113, 113, 0.6)',
@@ -119,14 +139,28 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           scales: {
             y: {
-              beginAtZero: true
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1,
+                precision: 0
+              }
             }
           }
+        }
+      });
+      
+      document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+        if(confirm("Are you sure you want to completely clear your historical scanning log?")) {
+          localStorage.removeItem('cybershield_history');
+          window.location.reload();
         }
       });
     });
   </script>
 </body>
 </html>
+
+

@@ -1,91 +1,55 @@
-// ─────────────────────────────
-// LOADER
-// ─────────────────────────────
+//  LOADER
 
 window.addEventListener('load', () => {
-
   setTimeout(() => {
-
     const loader = document.getElementById('loader');
-    const main = document.getElementById('mainPage');
-
+    const main   = document.getElementById('mainPage');
     loader.classList.add('fade-out');
-
     setTimeout(() => {
       loader.style.display = 'none';
       main.classList.remove('hidden');
     }, 500);
-
   }, 3200);
-
 });
 
-// ─────────────────────────────
-// TEAM — collapsible
-// ─────────────────────────────
+
+//  TEAM — collapsible
 
 const team = [
-  { name: "Mrinal Roy", img: "Mrinal.jpg" },
-  { name: "Rahul Sah", img: "Rahul.jpg" },
+  { name: "Mrinal Roy",    img: "Mrinal.jpg"   },
+  { name: "Rahul Sah",     img: "Rahul.jpg"    },
   { name: "Swastika Shaw", img: "Swastika.jpg" },
-  { name: "Arpita Roy", img: "Arpita.jpg" },
-  { name: "Disha Samanta", img: "Disha.jpg" },
+  { name: "Arpita Roy",    img: "Arpita.jpg"   },
+   {name: "Disha Samanta",     img: "Disha.jpg" },
 ];
 
 (function buildTeam() {
-
   const grid = document.getElementById('teamGrid');
-
   grid.innerHTML = team.map(m => {
-
-    const initials = m.name
-      .split(' ')
-      .map(w => w[0])
-      .join('');
-
+    const initials = m.name.split(' ').map(w => w[0]).join('');
     return `
       <div class="member-card">
-
         <div class="member-avatar">
-
-          <img
-            src="${m.img}"
-            alt="${m.name}"
-            onerror="this.parentElement.innerHTML='${initials}'"
-          >
-
+          <img src="${m.img}" alt="${m.name}"
+            onerror="this.parentElement.innerHTML='${initials}'">
         </div>
-
-        <div class="member-name">
-          ${m.name}
-        </div>
-
-      </div>
-    `;
-
+        <div class="member-name">${m.name}</div>
+      </div>`;
   }).join('');
-
 })();
+
 
 let teamOpen = false;
 
 function toggleTeam() {
-
   teamOpen = !teamOpen;
-
-  const wrap = document.getElementById('teamGridWrap');
+  const wrap   = document.getElementById('teamGridWrap');
   const toggle = document.getElementById('teamToggle');
-
   if (teamOpen) {
-
     wrap.classList.add('open');
     toggle.classList.add('open');
-
-    toggle.setAttribute('aria-label', 'Hide team members');
-    toggle.setAttribute('aria-expanded', 'true');
-
+    toggle.setAttribute('aria-label', 'Hide team');
   } else {
-
     wrap.classList.remove('open');
     toggle.classList.remove('open');
 
@@ -107,37 +71,16 @@ let dangerCount = 0;
 function isValidUrl(urlString) {
 
   try {
-    const urlObj = new URL(urlString);
-    const hostname = urlObj.hostname;
-
-    // To allow local testing
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return true;
-    }
-
-    const parts = hostname.split('.');
-    if (parts.length < 2) {
-      return false;
-    }
-
-    const tld = parts[parts.length - 1];
-    // TLD must be at least 2 chars & consist of only letters
-    if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
-      return false;
-    }
-
+    new URL(urlString);
     return true;
   } catch (e) {
     return false;
   }
-
 }
 
-// Format & Validate URL
 
-function formatAndValidateUrl(input) {
 
-  if (!input || input.trim() === '') {
+//  SCANNER
 
     return {
       valid: false,
@@ -156,15 +99,6 @@ function formatAndValidateUrl(input) {
     !url.startsWith('https://')
   ) {
     url = 'https://' + url;
-  }
-
-  // Validate URL length
-  if (url.length > 2048) {
-    return {
-      valid: false,
-      error: 'URL exceeds maximum length of 2048 characters.',
-      url: null
-    };
   }
 
   if (!isValidUrl(url)) {
@@ -212,30 +146,32 @@ function formatAndValidateUrl(input) {
 // Fill Example URL
 
 function fillExample(url) {
-
   document.getElementById('urlInput').value = url;
   document.getElementById('urlInput').focus();
-
 }
 
-// Update Stats
+function updateStats(type, threatTypes = []) {
+    //Extracts tracking array or generate empty container
+  const history = JSON.parse(localStorage.getItem('cybershield_history')) || [];
+  const scanRecord = {
+    timestamp: new Date().toISOString(),
+    status: type,
+    threats: threatTypes
+  };
+  
+  history.push(scanRecord);
+  localStorage.setItem('cybershield_history', JSON.stringify(history));
 
-function updateStats(type) {
+  //dynamically balancing real time counts for index homepage elements if they exist
+  const total = history.length;
+  const safe = history.filter(item => item.status === 'safe').length;
+  const danger = history.filter(item => item.status === 'danger').length;
 
-  totalScans++;
-
-  if (type === 'safe') {
-    safeCount++;
+  if (document.getElementById('totalScans')) {
+    document.getElementById('totalScans').textContent = total;
+    document.getElementById('safeCount').textContent = safe;
+    document.getElementById('dangerCount').textContent = danger;
   }
-
-  if (type === 'danger') {
-    dangerCount++;
-  }
-
-  document.getElementById('totalScans').textContent = totalScans;
-  document.getElementById('safeCount').textContent = safeCount;
-  document.getElementById('dangerCount').textContent = dangerCount;
-
 }
 
 function calculateRiskScore(url, isThreat) {
@@ -288,7 +224,7 @@ function calculateRiskScore(url, isThreat) {
       score += 10;
       breakdown.push({ text: 'Excessive subdomains used', type: 'warning' });
     } else {
-      breakdown.push({ text: 'Domain structure appears normal', type: 'safe' });
+       breakdown.push({ text: 'Domain structure appears normal', type: 'safe' });
     }
   } catch (e) {
     score += 20;
@@ -297,8 +233,8 @@ function calculateRiskScore(url, isThreat) {
 
   score = Math.min(100, score);
 
-  let confidence = isThreat ? 99 : 88;
-  if (!isThreat && score > 20) confidence -= 12;
+  let confidence = isThreat ? 99 : 88; 
+  if (!isThreat && score > 20) confidence -= 12; 
 
   return { score, confidence, breakdown };
 }
@@ -318,7 +254,7 @@ function showResult(type, title, desc, url, threats) {
 
   if ((type === 'safe' || type === 'danger') && url) {
     riskData = calculateRiskScore(url, isThreat);
-
+    
     let meterColor = 'var(--accent-1)';
     if (riskData.score > 30) meterColor = '#fbbf24';
     if (riskData.score > 60) meterColor = '#f87171';
@@ -357,173 +293,59 @@ function showResult(type, title, desc, url, threats) {
   }
 
   document.getElementById('result').innerHTML = `
-
     <div class="result-card ${type}">
-
       <div class="result-icon">
 
-        ${type === 'loading'
-      ? '<div class="spinner"></div>'
-      : type === 'scan-loading'
-        ? ''
-        : `<span>${icons[type]}</span>`
-    }
+        ${
+          type === 'loading'
+            ? '<div class="spinner"></div>'
+            : `<span>${icons[type]}</span>`
+        }
 
       </div>
-
       <div class="result-body">
         <div class="result-title">${title}</div>
         <div class="result-desc">${desc}</div>
         ${url ? `<div class="result-url">${url}</div>` : ''}
         ${threats && threats.length
-      ? `<div class="threat-tags">${threats.map(t =>
-        `<span class="threat-tag">${t}</span>`).join('')}</div>`
-      : ''}
+          ? `<div class="threat-tags">${threats.map(t =>
+              `<span class="threat-tag">${t}</span>`).join('')}</div>`
+          : ''}
         ${(type === 'safe' || type === 'danger') ? `
-          <div class="export-btns">
-            <button onclick="downloadPDF()" class="export-btn export-btn-pdf">⬇ Download PDF</button>
-            <button onclick="downloadImage()" class="export-btn export-btn-img">⬇ Download Image</button>
+          <div class="export-btns" style="display:flex;gap:10px;margin-top:16px;">
+            <button onclick="downloadPDF()" style="padding:10px 20px;cursor:pointer;border-radius:8px;border:none;background:#00ffb4;color:#0f172a;font-size:13px;font-weight:600;">⬇ Download PDF</button>
+            <button onclick="downloadImage()" style="padding:10px 20px;cursor:pointer;border-radius:8px;border:none;background:#3b82f6;color:#ffffff;font-size:13px;font-weight:600;">⬇ Download Image</button>
           </div>` : ''}
       </div>
     </div>`;
-
-  if (riskSectionHtml) {
-    setTimeout(() => {
-      const bar = document.querySelector('.risk-meter-bar');
-      if (bar) {
-        bar.style.width = bar.getAttribute('data-target-width');
-      }
-
-      const scoreEl = document.getElementById('animated-score');
-      if (scoreEl && riskData) {
-        let start = 0;
-        const end = riskData.score;
-        const duration = 1200;
-        const interval = 20;
-        const step = end / (duration / interval) || 0;
-        const timer = setInterval(() => {
-          start += step;
-          if (start >= end) {
-            start = end;
-            clearInterval(timer);
-          }
-          scoreEl.textContent = Math.round(start);
-        }, interval);
-      }
-
-      const confEl = document.getElementById('animated-confidence');
-      if (confEl && riskData) {
-        let startConf = 0;
-        const endConf = riskData.confidence;
-        const durationConf = 1200;
-        const intervalConf = 20;
-        const stepConf = endConf / (durationConf / intervalConf) || 0;
-        const timerConf = setInterval(() => {
-          startConf += stepConf;
-          if (startConf >= endConf) {
-            startConf = endConf;
-            clearInterval(timerConf);
-          }
-          confEl.textContent = Math.round(startConf);
-        }, intervalConf);
-      }
-    }, 50);
-  }
 }
 
-// ─────────────────────────────
-// MAIN SECURITY CHECK
-// ─────────────────────────────
-
 async function checkSecurity() {
-
-  const input =
-    document.getElementById('urlInput').value;
-
-  const validation =
-    formatAndValidateUrl(input);
-
-  // Validation failed
-
-  if (!validation.valid) {
-
-    showResult(
-      'error',
-      'Invalid Input',
-      validation.error,
-      '',
-      []
-    );
-
+  const input = document.getElementById('urlInput').value.trim();
+  if (!input) {
+    showResult('error', 'Enter a URL', 'Please type a URL to scan above.', '', []);
     return;
   }
 
   const url = validation.url;
-
-  const typoCard = document.getElementById('typosquattingCard');
-  if (typoCard) {
-    typoCard.classList.add('hidden');
-  }
 
   const btn =
     document.getElementById('scanBtn');
 
   btn.disabled = true;
 
-  // Loading State — enhanced scan animation
+  // Loading State
 
-  document.getElementById('result').innerHTML = `
-    <div class="result-card loading">
-      <div class="result-body">
-        <div class="scan-loading">
-          <div class="scan-shield-wrap">
-            <div class="scan-shield-ring-outer"></div>
-            <div class="scan-shield-ring"></div>
-            <div class="scan-shield-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="1.8">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
-            </div>
-          </div>
-          <div>
-            <div class="result-title" style="text-align:center;">Scanning URL...</div>
-            <div class="result-url" style="text-align:center;margin-top:8px;">${url}</div>
-          </div>
-          <div class="scan-progress-wrap">
-            <div class="scan-progress-bar">
-              <div class="scan-progress-fill"></div>
-            </div>
-            <div class="scan-status-text">
-              <span class="scan-status-step">Checking threat databases...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-
-  // Animate status text steps
-  const statusEl = document.querySelector('.scan-status-step');
-  const steps = [
-    'Connecting to Safe Browsing API...',
-    'Analyzing URL patterns...',
-    'Checking threat databases...',
-    'Finalizing results...'
-  ];
-  let stepIndex = 0;
-  const stepTimer = setInterval(() => {
-    stepIndex++;
-    if (stepIndex < steps.length && statusEl) {
-      statusEl.textContent = steps[stepIndex];
-    } else {
-      clearInterval(stepTimer);
-    }
-  }, 800);
+  showResult(
+    'loading',
+    'Scanning...',
+    'Checking against threat databases. Please wait.',
+    url,
+    []
+  );
 
   try {
-    const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:3002'
-      : 'https://cybershield-sxz0.onrender.com';
-    const response = await fetch(`${apiHost}/check`, {
+    const response = await fetch('https://cybershield-sxz0.onrender.com/check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url })
@@ -550,28 +372,12 @@ async function checkSecurity() {
       const hasUnwanted = allThreats.includes('UNWANTED_SOFTWARE');
       const hasHarmful = allThreats.includes('POTENTIALLY_HARMFUL_APPLICATION');
       const threats = [...new Set(allThreats.map(t => t.replace(/_/g, ' ')))];
-      updateStats('danger');
+      const allThreats = data.matches.map(m => m.threatType);
+      updateStats('danger', allThreats);
       showResult('danger', 'Threat Detected!',
-        `This URL is flagged as dangerous. Do not visit it.<br><br>
-        <div class="breakdown">
-          <div class="breakdown-item">
-            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure'}
-          </div>
-          <div class="breakdown-item">
-            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
-          </div>
-        </div>`, url, threats);
+        'This URL is flagged as dangerous. Do not visit it.', url, threats);
     } else {
-      updateStats('safe');
+      updateStats('safe', []);
       const urlObj = new URL(url);
       const isHttps = urlObj.protocol === 'https:';
       const allThreats = data.matches ? data.matches.map(m => m.threatType) : [];
@@ -601,24 +407,14 @@ async function checkSecurity() {
         </div>`, url, []);
     }
 
-    if (data.typosquatting) {
-      const typoCard = document.getElementById('typosquattingCard');
-      if (typoCard) {
-        typoCard.classList.remove('hidden');
-        renderFamilyTree(data.typosquatting);
-      }
-    }
-
   } catch (err) {
-    showResult('error', 'Scan Error',
-      `An unexpected error occurred.<br>
+    showResult('error', 'Backend Not Connected',
+      `Make sure your backend server is running.<br>
        <small style="color:#334155">Error: ${err.message}</small>`,
       '', []);
   } finally {
     btn.disabled = false;
-
   }
-
 }
 
 document.getElementById('urlInput').addEventListener('keydown', e => {
@@ -678,324 +474,6 @@ async function downloadPDF() {
   pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
   pdf.save('cybershield-report.pdf');
 }
-
-// ─────────────────────────────
-// TYPOSQUATTING FAMILY TREE
-// ─────────────────────────────
-
-function renderFamilyTree(typosquattingData) {
-  const container = document.getElementById('treeContainer');
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  const original = typosquattingData.original;
-  const variants = typosquattingData.variants;
-
-  if (!variants || variants.length === 0) {
-    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8;">No typosquatting variants generated for this domain.</div>';
-    return;
-  }
-
-  const categoriesMap = {
-    homoglyph: { name: "Homoglyphs", children: [] },
-    tld: { name: "TLD Swaps", children: [] },
-    substitution: { name: "Substitutions", children: [] },
-    hyphen: { name: "Hyphen Injections", children: [] }
-  };
-
-  variants.forEach(v => {
-    if (categoriesMap[v.category]) {
-      categoriesMap[v.category].children.push({
-        name: v.domain,
-        type: "variant",
-        threat: v.threat,
-        distance: v.distance,
-        category: v.category
-      });
-    }
-  });
-
-  const rootChildren = Object.values(categoriesMap).filter(cat => cat.children.length > 0);
-
-  const rootData = {
-    name: original.domain,
-    type: "original",
-    threat: original.threat,
-    children: rootChildren.map(cat => ({
-      name: cat.name,
-      type: "category",
-      children: cat.children
-    }))
-  };
-
-  const margin = { top: 20, right: 120, bottom: 20, left: 120 };
-  const width = container.clientWidth || 800;
-  const height = 450;
-  const innerWidth = width - margin.left - margin.right;
-  const innerHeight = height - margin.top - margin.bottom;
-
-  const svg = d3.select(container)
-    .append("svg")
-    .attr("width", "100%")
-    .attr("height", height)
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .style("overflow", "visible")
-    .append("g")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-  let i = 0;
-  const treemap = d3.tree().size([innerHeight, innerWidth]);
-
-  const root = d3.hierarchy(rootData);
-  root.x0 = innerHeight / 2;
-  root.y0 = 0;
-
-  let tooltip = document.getElementById("tree-tooltip");
-  if (!tooltip) {
-    tooltip = document.createElement("div");
-    tooltip.id = "tree-tooltip";
-    tooltip.className = "tree-tooltip";
-    tooltip.style.cssText = `
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 12px;
-      color: #f1f5f9;
-      font-size: 0.85rem;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-      z-index: 1000;
-      transition: opacity 0.2s ease;
-      min-width: 220px;
-    `;
-    container.appendChild(tooltip);
-  }
-
-  function highlightHomoglyphs(domain, originalDomain) {
-    let highlightedHtml = '';
-    let hasHomoglyphHighlight = false;
-    
-    for (let idx = 0; idx < domain.length; idx++) {
-      const char = domain[idx];
-      const code = char.charCodeAt(0);
-      
-      const isNonAscii = code > 127;
-      const isDifferent = originalDomain && originalDomain[idx] !== char;
-      
-      if (isNonAscii && isDifferent) {
-        highlightedHtml += `<span style="color: #f87171; font-weight: bold; text-decoration: underline;" title="Unicode U+${code.toString(16).toUpperCase()}">${char}</span>`;
-        hasHomoglyphHighlight = true;
-      } else {
-        highlightedHtml += char;
-      }
-    }
-    return { html: highlightedHtml, detected: hasHomoglyphHighlight };
-  }
-
-  function showTooltip(event, data) {
-    const rect = container.getBoundingClientRect();
-    const x = event.clientX - rect.left + 15;
-    const y = event.clientY - rect.top + 15;
-
-    let threatText = "";
-    let threatColor = "";
-    let desc = "";
-
-    if (data.type === "original") {
-      threatText = data.threat === "malicious" ? "Malicious (Flagged)" : "Safe";
-      threatColor = data.threat === "malicious" ? "#ef4444" : "#10b981";
-      desc = "The original target domain analyzed by Google Safe Browsing.";
-    } else {
-      threatText = data.threat === "malicious" ? "Malicious (Flagged)" : "Suspicious Typosquatting Candidate";
-      threatColor = data.threat === "malicious" ? "#ef4444" : "#f59e0b";
-      
-      const catDescriptions = {
-        homoglyph: "Visual look-alike representations (IDN homograph attack vector) designed to deceive.",
-        tld: "TLD replacement targeting keyboard extensions or common domain mistakes.",
-        substitution: "Common keyboard layout substitutions targeting spelling typos.",
-        hyphen: "Plausible spacing or prefix hyphen variations."
-      };
-      desc = catDescriptions[data.category] || "Variant domain variation.";
-    }
-
-    let displayName = data.name;
-    let homoglyphNote = '';
-    if (data.type === "variant" && data.category === "homoglyph") {
-      const highlightResult = highlightHomoglyphs(data.name, original.domain);
-      if (highlightResult.detected) {
-        displayName = highlightResult.html;
-        homoglyphNote = `<div style="font-size: 0.75rem; color: #f87171; margin-top: 8px; line-height: 1.3; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;">⚠️ Underlined character is a look-alike Unicode homoglyph.</div>`;
-      }
-    }
-
-    tooltip.innerHTML = `
-      <div style="font-weight: bold; color: #fff; margin-bottom: 4px; word-break: break-all;">${displayName}</div>
-      <div style="margin-bottom: 6px;">
-        <span style="font-size: 0.75rem; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #cbd5e1;">
-          ${data.type === "original" ? "Original Target" : "Variant"}
-        </span>
-      </div>
-      <div style="margin-bottom: 6px; font-size: 0.8rem;">
-        <b>Threat Level:</b> <span style="color: ${threatColor}; font-weight: bold;">${threatText}</span>
-      </div>
-      ${data.type !== "original" ? `<div style="margin-bottom: 6px; font-size: 0.8rem;"><b>Edit Distance:</b> Levenshtein ${data.distance}</div>` : ""}
-      <div style="font-size: 0.75rem; color: #94a3b8; line-height: 1.4;">${desc}</div>
-      ${homoglyphNote}
-    `;
-
-    tooltip.style.left = `${x}px`;
-    tooltip.style.top = `${y}px`;
-    tooltip.style.opacity = "1";
-  }
-
-  function hideTooltip() {
-    tooltip.style.opacity = "0";
-  }
-
-  function update(source) {
-    const treeData = treemap(root);
-    const nodes = treeData.descendants();
-    const links = treeData.descendants().slice(1);
-
-    nodes.forEach(d => { d.y = d.depth * 180; });
-
-    const node = svg.selectAll("g.node")
-      .data(nodes, d => d.id || (d.id = ++i));
-
-    const nodeEnter = node.enter().append("g")
-      .attr("class", "node")
-      .attr("transform", d => `translate(${source.y0},${source.x0})`)
-      .on("click", (event, d) => {
-        if (d.data.type === "category") {
-          if (d.children) {
-            d._children = d.children;
-            d.children = null;
-          } else {
-            d.children = d._children;
-            d._children = null;
-          }
-          update(d);
-        }
-      });
-
-    nodeEnter.append("circle")
-      .attr("class", d => `node-circle ${d.data.threat || ""} ${d.data.type}`)
-      .attr("r", d => d.data.type === "original" ? 10 : d.data.type === "category" ? 7 : 5)
-      .style("cursor", d => d.data.type === "category" ? "pointer" : "default")
-      .style("fill", d => {
-        if (d.data.type === "original") return "var(--accent-1)";
-        if (d.data.type === "category") return "#94a3b8";
-        if (d.data.threat === "malicious") return "#ef4444";
-        if (d.data.threat === "suspicious") return "#f59e0b";
-        return "#10b981";
-      })
-      .style("stroke", d => {
-        if (d.data.type === "original") return "rgba(0, 255, 180, 0.4)";
-        if (d.data.type === "category") return "rgba(255, 255, 255, 0.2)";
-        return "none";
-      })
-      .style("stroke-width", "4px");
-
-    nodeEnter.append("text")
-      .attr("dy", ".35em")
-      .attr("x", d => d.children || d._children ? -13 : 13)
-      .attr("text-anchor", d => d.children || d._children ? "end" : "start")
-      .text(d => d.data.name)
-      .style("fill", "#f1f5f9")
-      .style("font-family", "sans-serif")
-      .style("font-size", d => d.data.type === "original" ? "12px" : d.data.type === "category" ? "11px" : "10px")
-      .style("font-weight", d => d.data.type === "original" || d.data.type === "category" ? "bold" : "normal")
-      .style("pointer-events", "none")
-      .style("text-shadow", "0 1px 3px rgba(0,0,0,0.8)");
-
-    const nodeUpdate = nodeEnter.merge(node);
-
-    nodeUpdate.transition()
-      .duration(500)
-      .attr("transform", d => `translate(${d.y},${d.x})`);
-
-    nodeUpdate.select("circle")
-      .attr("r", d => d.data.type === "original" ? 10 : d.data.type === "category" ? 7 : 5)
-      .style("fill", d => {
-        if (d.data.type === "original") return "var(--accent-1)";
-        if (d.data.type === "category") {
-          return d._children ? "var(--accent-1)" : "#64748b";
-        }
-        if (d.data.threat === "malicious") return "#ef4444";
-        if (d.data.threat === "suspicious") return "#f59e0b";
-        return "#10b981";
-      });
-
-    const nodeExit = node.exit().transition()
-      .duration(500)
-      .attr("transform", d => `translate(${source.y},${source.x})`)
-      .remove();
-
-    nodeExit.select("circle").attr("r", 0);
-    nodeExit.select("text").style("fill-opacity", 0);
-
-    const link = svg.selectAll("path.link")
-      .data(links, d => d.id);
-
-    const linkEnter = link.enter().insert("path", "g")
-      .attr("class", "link")
-      .attr("d", d => {
-        const o = { x: source.x0, y: source.y0 };
-        return diagonal(o, o);
-      })
-      .style("fill", "none")
-      .style("stroke", "rgba(148, 163, 184, 0.2)")
-      .style("stroke-width", "1.5px");
-
-    const linkUpdate = linkEnter.merge(link);
-
-    linkUpdate.transition()
-      .duration(500)
-      .attr("d", d => diagonal(d, d.parent))
-      .style("stroke", d => {
-        if (d.data.threat === "malicious") return "rgba(239, 68, 68, 0.3)";
-        if (d.data.threat === "suspicious") return "rgba(245, 158, 11, 0.3)";
-        if (d.data.type === "category") return "rgba(148, 163, 184, 0.15)";
-        return "rgba(16, 185, 129, 0.3)";
-      });
-
-    link.exit().transition()
-      .duration(500)
-      .attr("d", d => {
-        const o = { x: source.x, y: source.y };
-        return diagonal(o, o);
-      })
-      .remove();
-
-    nodes.forEach(d => {
-      d.x0 = d.x;
-      d.y0 = d.y;
-    });
-
-    nodeUpdate
-      .filter(d => d.data.type === "variant" || d.data.type === "original")
-      .on("mouseover", (event, d) => {
-        showTooltip(event, d.data);
-      })
-      .on("mouseout", () => {
-        hideTooltip();
-      });
-  }
-
-  function diagonal(s, d) {
-    return `M ${s.y} ${s.x}
-            C ${(s.y + d.y) / 2} ${s.x},
-              ${(s.y + d.y) / 2} ${d.x},
-              ${d.y} ${d.x}`;
-  }
-
-  update(root);
-}
-
 // ─────────────────────────────
 // THEME TOGGLE
 // ─────────────────────────────
