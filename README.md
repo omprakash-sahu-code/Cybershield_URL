@@ -12,6 +12,8 @@ https://mrinalray.github.io/Cybershield_URL/
 ## 📌 Features
 
 * 🔍 **Real-time URL scanning**
+* 📸 **Drag-and-Drop Screenshot Scanner** — Drop or upload screenshots containing URLs; the system automatically extracts them using Gemini AI and scans them.
+* 💬 **AI Scam Detector Chat** — Interactive chat assistant to analyze suspicious messages, emails, or job pitches.
 * 🛡️ **Detects phishing, malware, and social engineering threats**
 * ⚡ **Fast and responsive UI**
 * 🌐 **Uses Google Safe Browsing API**
@@ -22,7 +24,9 @@ https://mrinalray.github.io/Cybershield_URL/
 ## 🧠 How It Works
 ![Main Page View](assets/cybershield_main_page.png)
 
-1. 🔗 **Enter URL**  
+1. 🔗 **Enter URL or Upload Screenshot**  
+   - Users can manually enter a URL or drag & drop a screenshot containing a URL.
+   - For screenshots, the backend extracts the URL automatically using Gemini AI OCR.
    The user inputs a website link into the scanner.
 
 2. ⚡ **Send Request**  
@@ -66,17 +70,20 @@ https://mrinalray.github.io/Cybershield_URL/
 
 ## 🔑 API Integration
 
-This project uses:
+This project integrates two primary security/AI services:
 
-* Google Safe Browsing API
-  * Detects malicious URLs
-  * Requires API key from Google Cloud Console
-  * **To generate your API Key**:
-    1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-    2. Create or select a project.
-    3. Enable the **Safe Browsing API**.
-    4. Go to **APIs & Services > Credentials** and generate an API key.
-    5. Save the key in your local `.env` configuration file.
+1. **Google Safe Browsing API** (Detects malicious threat URLs)
+   - **How to generate key**:
+     1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+     2. Enable the **Safe Browsing API**.
+     3. Go to **APIs & Services > Credentials** and generate an API key.
+     4. Save the key as `API_KEY` in your `.env` file.
+
+2. **Gemini API** (Powers the Scam Detector Chat & Screenshot URL OCR Scanner)
+   - **How to generate key**:
+     1. Go to [Google AI Studio](https://aistudio.google.com/).
+     2. Click on **Get API Key** and create a new key.
+     3. Save the key as `GEMINI_API_KEY` in your `.env` file.
 
 ---
 
@@ -88,22 +95,21 @@ This project uses:
 git clone https://github.com/mrinalray/Cybershield_URL.git
 ```
 
-2. Navigate to project folder:
+2. Navigate to the project folder:
 
 ```bash
 cd Cybershield_URL
 ```
 
-3. Create a `.env` file for backend configuration:
+3. Configure your environment variables. Copy the template `.env.example` to `.env`:
 
 ```bash
-API_KEY=YOUR_API_KEY
-CORS_ORIGINS=https://cybershield-url.netlify.app,http://localhost:5500
-REQUEST_TIMEOUT_MS=5000
-REQUEST_RETRIES=2
+cp .env.example .env
 ```
 
-4. Start backend:
+Open `.env` and fill in your generated `API_KEY` and `GEMINI_API_KEY`.
+
+4. Start the backend:
 
 ```bash
 node server.js

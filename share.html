@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>CyberShield Shared Report</title>
+
+  <style>
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 700px;
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 18px;
+      padding: 32px;
+      box-shadow: 0 0 40px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      color: #00ffb4;
+      margin-bottom: 10px;
+    }
+
+    .label {
+      color: #94a3b8;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .value {
+      font-size: 18px;
+      margin-top: 6px;
+      word-break: break-word;
+    }
+
+    .safe {
+      color: #00ffb4;
+      font-weight: bold;
+    }
+
+    .danger {
+      color: #f87171;
+      font-weight: bold;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: #7f1d1d;
+      color: #fecaca;
+      margin: 6px 6px 0 0;
+      font-size: 14px;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="card">
+
+    <h1>🛡️ CyberShield Shared Report</h1>
+
+    <div class="label">Scanned URL</div>
+    <div class="value" id="url"></div>
+
+    <div class="label">Result</div>
+    <div class="value" id="result"></div>
+
+    <div class="label">Risk Score</div>
+    <div class="value" id="risk"></div>
+
+    <div class="label">Threats</div>
+    <div class="value" id="threats"></div>
+
+    <div class="label">Generated At</div>
+    <div class="value" id="created"></div>
+
+  </div>
+
+  <script>
+
+    async function loadReport() {
+
+      const params =
+        new URLSearchParams(window.location.search);
+
+      const id = params.get('id');
+
+      if (!id) {
+        alert("Invalid share link");
+        return;
+      }
+
+      const response =
+        await fetch(`http://localhost:3002/share/${id}`);
+
+      const data = await response.json();
+
+      document.getElementById('url').textContent =
+        data.url;
+
+      const resultEl =
+        document.getElementById('result');
+
+      resultEl.textContent =
+        data.resultType;
+
+      resultEl.className =
+        data.resultType.includes('Safe')
+          ? 'value safe'
+          : 'value danger';
+
+      document.getElementById('risk').textContent =
+        data.riskScore + "/100";
+
+      const threatsEl =
+        document.getElementById('threats');
+
+      if (data.threats.length === 0) {
+
+        threatsEl.innerHTML =
+          '<span class="safe">No threats detected</span>';
+
+      } else {
+
+        threatsEl.innerHTML =
+          data.threats
+            .map(t => `<span class="tag">${t}</span>`)
+            .join('');
+
+      }
+
+      document.getElementById('created').textContent =
+        new Date(data.createdAt).toLocaleString();
+
+    }
+
+    loadReport();
+
+  </script>
+
+</body>
+</html>
