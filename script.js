@@ -1,4 +1,4 @@
-// ─────────────────────────────
+  // ─────────────────────────────
 // LOADER
 // ─────────────────────────────
 
@@ -775,9 +775,30 @@ async function checkSecurity() {
           </div>
         </div>`, url, threats);
 
-      // Show threat-specific tips
-      showTips(allThreats);
-      showDomainReputation(url);
+      addToHistory(url, 'DANGER', {
+        title: 'Threat Detected!',
+        desc: `This URL is flagged as dangerous. Do not visit it.<br><br>
+        <div class="breakdown">
+          <div class="breakdown-item">
+            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure'}
+          </div>
+          <div class="breakdown-item">
+            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
+          </div>
+        </div>`,
+        threats: threats,
+        resultType: 'danger'
+      });
+
     } else {
       updateStats('safe');
       const urlObj = new URL(url);
@@ -818,29 +839,49 @@ async function checkSecurity() {
           </div>
         </div>`, url, []);
 
-      // Show rotating general tip
-      showTips([]);
-      showDomainReputation(url);
+      addToHistory(url, 'SAFE', {
+        title: 'URL is Safe',
+        desc: `No threats detected. Google Safe Browsing found no issues.<br><br>
+        <div class="breakdown">
+          <div class="breakdown-item">
+            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure — use with caution'}
+          </div>
+          <div class="breakdown-item">
+            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
+          </div>
+          <div class="breakdown-item">
+            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
+          </div>
+        </div>`,
+        threats: [],
+        resultType: 'safe'
+      });
+
     }
 
-    if (data.typosquatting) {
-      const typoCard = document.getElementById('typosquattingCard');
-      if (typoCard) {
-        typoCard.classList.remove('hidden');
-        renderFamilyTree(data.typosquatting);
-      }
-    }
 
-} catch (err) {
+  } catch (err) {
+    showResult('error', 'Scan Error',
+      `An unexpected error occurred.<br>
+       <small style="color:#334155">Error: ${err.message}</small>`,
+      '', []);
+    // Store attempted URL only if it passed initial validation
+      addToHistory(input, 'ERROR', {
+      title: 'Scan Error',
+      desc: `An unexpected error occurred.<br><small style="color:#334155">Error: ${err.message}</small>`,
+      threats: [],
+      resultType: 'error'
+    });
 
-  showResult(
-    'error',
-    'Scan Error',
-    `An unexpected error occurred.<br>
-     <small style="color:#334155">Error: ${err.message}</small>`,
-    '',
-    []
-  );
+  } finally {
+
+    btn.disabled = false;
 
 } finally {
     btn.disabled = false;
@@ -910,94 +951,208 @@ async function downloadPDF() {
   pdf.save('cybershield-report.pdf');
 }
 // ─────────────────────────────
-// DOMAIN REPUTATION
+// HISTORY PANEL (localStorage)
 // ─────────────────────────────
 
-async function showDomainReputation(url) {
-  const resultEl = document.getElementById('result');
+const HISTORY_KEY = 'cybershield_scan_history_v1';
 
-  // Remove existing domain card
-  const existing = resultEl.querySelector('.domain-card');
-  if (existing) existing.remove();
-
-  // Placeholder while loading
-  const placeholder = document.createElement('div');
-  placeholder.className = 'domain-card loading-domain';
-  placeholder.innerHTML = `<div class="domain-loading">🔍 Looking up domain info...</div>`;
-  resultEl.insertAdjacentElement('beforeend', placeholder);
-
+function safeParseJson(value, fallback) {
   try {
-    const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:3000'
-      : 'https://cybershield-sxz0.onrender.com';
-
-    const response = await fetch(`${apiHost}/domain-info?domain=${encodeURIComponent(url)}`);
-    const data = await response.json();
-
-    if (data.error) throw new Error(data.error);
-
-    const trustColor = data.trustScore >= 70 ? '#00ffb4' : data.trustScore >= 40 ? '#fbbf24' : '#f87171';
-    const trustLabel = data.trustScore >= 70 ? 'Trusted' : data.trustScore >= 40 ? 'Moderate' : 'Low Trust';
-
-    const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
-
-    placeholder.outerHTML = `
-      <div class="domain-card" role="region" aria-label="Domain Reputation">
-        <div class="domain-header">
-          <span class="domain-header-icon" aria-hidden="true">🌐</span>
-          <span class="domain-header-title">Domain Reputation</span>
-          <span class="domain-trust-badge" style="color: ${trustColor}; border-color: ${trustColor};">
-            ${trustLabel} · ${data.trustScore}/100
-          </span>
-        </div>
-        <div class="domain-grid">
-          <div class="domain-stat">
-            <div class="domain-stat-label">Domain</div>
-            <div class="domain-stat-value">${data.domain}</div>
-          </div>
-          <div class="domain-stat">
-            <div class="domain-stat-label">Age</div>
-            <div class="domain-stat-value">${data.ageYears !== null ? data.ageYears + ' years' : 'N/A'}</div>
-          </div>
-          <div class="domain-stat">
-            <div class="domain-stat-label">Registered</div>
-            <div class="domain-stat-value">${formatDate(data.registered)}</div>
-          </div>
-          <div class="domain-stat">
-            <div class="domain-stat-label">Expires</div>
-            <div class="domain-stat-value">${formatDate(data.expiry)}</div>
-          </div>
-          <div class="domain-stat">
-            <div class="domain-stat-label">Registrar</div>
-            <div class="domain-stat-value">${data.registrar || 'N/A'}</div>
-          </div>
-          <div class="domain-stat">
-            <div class="domain-stat-label">Nameservers</div>
-            <div class="domain-stat-value">${data.nameservers.length ? data.nameservers.join(', ') : 'N/A'}</div>
-          </div>
-        </div>
-        ${data.status.length ? `
-        <div class="domain-status">
-          ${data.status.map(s => `<span class="domain-status-tag">${s}</span>`).join('')}
-        </div>` : ''}
-      </div>
-    `;
-
-  } catch (err) {
-    placeholder.outerHTML = `
-      <div class="domain-card domain-error" role="region" aria-label="Domain Reputation">
-        <div class="domain-header">
-          <span aria-hidden="true">🌐</span>
-          <span class="domain-header-title">Domain Reputation</span>
-        </div>
-        <p class="domain-error-msg">Could not fetch domain info: ${err.message}</p>
-      </div>
-    `;
+    return JSON.parse(value);
+  } catch {
+    return fallback;
   }
 }
+
+function normalizeUrlForHistory(urlString) {
+  try {
+    const input = (urlString || '').trim();
+    if (!input) return '';
+    const withProto =
+      input.startsWith('http://') || input.startsWith('https://')
+        ? input
+        : 'https://' + input;
+    const u = new URL(withProto);
+    // Remove trailing slash to reduce duplicates
+    const path = (u.pathname && u.pathname !== '/') ? u.pathname : '';
+    const query = u.search ? u.search : '';
+    const hash = '';
+    return `${u.protocol}//${u.hostname}${path}${query}${hash}`;
+  } catch {
+    // If normalization fails, use raw trimmed input
+    return (urlString || '').trim();
+  }
+}
+
+function loadHistory() {
+  const raw = localStorage.getItem(HISTORY_KEY);
+  const arr = safeParseJson(raw, []);
+  if (!Array.isArray(arr)) return [];
+  return arr;
+}
+
+function saveHistory(history) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function renderHistory() {
+  const listEl = document.getElementById('historyList');
+  const metaEl = document.getElementById('historyMeta');
+  if (!listEl) return;
+
+  const history = loadHistory();
+
+  if (!history.length) {
+    if (metaEl) metaEl.textContent = 'No scans yet';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  if (metaEl) metaEl.textContent = `${history.length} saved scan${history.length === 1 ? '' : 's'}`;
+
+  // newest first
+  const view = [...history].sort((a, b) => (b.at || 0) - (a.at || 0));
+  listEl.innerHTML = view.map(item => {
+    const at = item.at ? new Date(item.at).toLocaleString() : '';
+    const status = item.status || 'UNKNOWN';
+    return `
+      <div class="history-item" role="listitem">
+        <button type="button" onclick="loadHistoryReport(${JSON.stringify(item.url)})" aria-label="Load saved report">
+          <div class="history-url">${item.url}</div>
+          <div class="history-url" style="margin-top:4px; font-size:11px; color: var(--subtitle-color); text-transform: uppercase; letter-spacing: .06em;">${status}</div>
+        </button>
+
+        <div class="history-at">${at}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function addToHistory(url, status, reportPayload = null) {
+  if (!url) return;
+
+  const normalized = normalizeUrlForHistory(url);
+
+  if (!normalized) return;
+
+  const history = loadHistory();
+
+  // De-dup by normalized URL
+  const existingIndex = history.findIndex(h => normalizeUrlForHistory(h.url) === normalized);
+
+  // Merge existing payload with the newly provided one (if any)
+  const existing = existingIndex >= 0 ? history[existingIndex] : null;
+  const entry = {
+    url: url.trim(),
+    normalized,
+    at: Date.now(),
+    status: (status || '').toUpperCase(),
+    // Merge existing payload with the newly provided one (if any)
+    title: reportPayload?.title ?? existing?.title ?? null,
+    desc: reportPayload?.desc ?? existing?.desc ?? null,
+    threats: reportPayload?.threats ?? existing?.threats ?? null,
+    resultType:
+      reportPayload?.resultType ?? existing?.resultType ?? (status || '').toLowerCase()
+  };
+
+
+  if (existingIndex >= 0) {
+    history[existingIndex] = entry;
+  } else {
+    history.push(entry);
+  }
+
+  saveHistory(history);
+  renderHistory();
+}
+
+function loadHistoryReport(urlString) {
+  const history = loadHistory();
+  if (!history.length) return;
+
+  const normalized = normalizeUrlForHistory(urlString);
+  const found = history.find(h => normalizeUrlForHistory(h.url) === normalized);
+  if (!found) return;
+
+  // Close/hide any previous loading animations quickly
+  const riskEl = document.getElementById('riskAnalysis');
+  if (riskEl) riskEl.classList.remove('hidden');
+
+  // Make the result update feel instant
+  const resultEl = document.getElementById('result');
+  // 'instant' isn't reliably supported everywhere; use auto for consistent UX.
+  if (resultEl) resultEl.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+
+
+
+
+  // If we have stored a full report payload, restore it.
+  // Otherwise, at minimum fill input + show a friendly message.
+  if (found.title && found.desc != null) {
+    document.getElementById('urlInput').value = found.url;
+
+    // Restore result view without altering history list.
+    showResult(
+      found.resultType === 'danger' ? 'danger' : 'safe',
+      found.title,
+      found.desc,
+      found.url,
+      found.threats || []
+    );
+
+    // Ensure risk section becomes visible for safe/danger
+    document.getElementById('riskAnalysis')?.classList.remove('hidden');
+    return;
+  }
+
+  // Backward compatibility fallback
+  fillExample(found.url);
+  showResult(
+    'safe',
+    'Report loaded',
+    `Saved scan metadata found, but full details weren\'t available in this history entry.<br><br>Please rescan to regenerate full report details for this URL.`,
+    found.url,
+    []
+  );
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderHistory();
+
+  // Real-time-ish update for history timestamps (every 5s)
+  const startTsUpdater = () => {
+    const listEl = document.getElementById('historyList');
+    if (!listEl) return;
+
+    const tick = () => {
+      const history = loadHistory();
+      if (!history.length) return;
+
+      const view = [...history].sort((a, b) => (b.at || 0) - (a.at || 0));
+      const items = listEl.querySelectorAll('.history-item');
+
+      items.forEach((el, idx) => {
+        const item = view[idx];
+        if (!item) return;
+        const at = item.at ? new Date(item.at).toLocaleString() : '';
+        const atEl = el.querySelector('.history-at');
+        if (atEl) atEl.textContent = at;
+      });
+    };
+
+    tick();
+    window.setInterval(tick, 5000);
+  };
+
+  startTsUpdater();
+});
+
+
 // ─────────────────────────────
 // THEME TOGGLE
 // ─────────────────────────────
+
 
 (function initTheme() {
 
