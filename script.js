@@ -1,91 +1,55 @@
-// ─────────────────────────────
-// LOADER
-// ─────────────────────────────
+//  LOADER
 
 window.addEventListener('load', () => {
-
   setTimeout(() => {
-
     const loader = document.getElementById('loader');
-    const main = document.getElementById('mainPage');
-
+    const main   = document.getElementById('mainPage');
     loader.classList.add('fade-out');
-
     setTimeout(() => {
       loader.style.display = 'none';
       main.classList.remove('hidden');
     }, 500);
-
   }, 3200);
-
 });
 
-// ─────────────────────────────
-// TEAM — collapsible
-// ─────────────────────────────
+
+//  TEAM — collapsible
 
 const team = [
-  { name: "Mrinal Roy", img: "Mrinal.jpg" },
-  { name: "Rahul Sah", img: "Rahul.jpg" },
+  { name: "Mrinal Roy",    img: "Mrinal.jpg"   },
+  { name: "Rahul Sah",     img: "Rahul.jpg"    },
   { name: "Swastika Shaw", img: "Swastika.jpg" },
-  { name: "Arpita Roy", img: "Arpita.jpg" },
-  { name: "Disha Samanta", img: "Disha.jpg" },
+  { name: "Arpita Roy",    img: "Arpita.jpg"   },
+   {name: "Disha Samanta",     img: "Disha.jpg" },
 ];
 
 (function buildTeam() {
-
   const grid = document.getElementById('teamGrid');
-
   grid.innerHTML = team.map(m => {
-
-    const initials = m.name
-      .split(' ')
-      .map(w => w[0])
-      .join('');
-
+    const initials = m.name.split(' ').map(w => w[0]).join('');
     return `
       <div class="member-card">
-
         <div class="member-avatar">
-
-          <img
-            src="${m.img}"
-            alt="${m.name}"
-            onerror="this.parentElement.innerHTML='${initials}'"
-          >
-
+          <img src="${m.img}" alt="${m.name}"
+            onerror="this.parentElement.innerHTML='${initials}'">
         </div>
-
-        <div class="member-name">
-          ${m.name}
-        </div>
-
-      </div>
-    `;
-
+        <div class="member-name">${m.name}</div>
+      </div>`;
   }).join('');
-
 })();
+
 
 let teamOpen = false;
 
 function toggleTeam() {
-
   teamOpen = !teamOpen;
-
-  const wrap = document.getElementById('teamGridWrap');
+  const wrap   = document.getElementById('teamGridWrap');
   const toggle = document.getElementById('teamToggle');
-
   if (teamOpen) {
-
     wrap.classList.add('open');
     toggle.classList.add('open');
-
-    toggle.setAttribute('aria-label', 'Hide team members');
-    toggle.setAttribute('aria-expanded', 'true');
-
+    toggle.setAttribute('aria-label', 'Hide team');
   } else {
-
     wrap.classList.remove('open');
     toggle.classList.remove('open');
 
@@ -112,14 +76,11 @@ function isValidUrl(urlString) {
   } catch (e) {
     return false;
   }
-
 }
 
-// Format & Validate URL
 
-function formatAndValidateUrl(input) {
 
-  if (!input || input.trim() === '') {
+//  SCANNER
 
     return {
       valid: false,
@@ -185,10 +146,8 @@ function formatAndValidateUrl(input) {
 // Fill Example URL
 
 function fillExample(url) {
-
   document.getElementById('urlInput').value = url;
   document.getElementById('urlInput').focus();
-
 }
 
 function updateStats(type, threatTypes = []) {
@@ -334,9 +293,7 @@ function showResult(type, title, desc, url, threats) {
   }
 
   document.getElementById('result').innerHTML = `
-
     <div class="result-card ${type}">
-
       <div class="result-icon">
 
         ${
@@ -346,7 +303,6 @@ function showResult(type, title, desc, url, threats) {
         }
 
       </div>
-
       <div class="result-body">
         <div class="result-title">${title}</div>
         <div class="result-desc">${desc}</div>
@@ -362,75 +318,12 @@ function showResult(type, title, desc, url, threats) {
           </div>` : ''}
       </div>
     </div>`;
-
-  if (riskSectionHtml) {
-    setTimeout(() => {
-      const bar = document.querySelector('.risk-meter-bar');
-      if (bar) {
-        bar.style.width = bar.getAttribute('data-target-width');
-      }
-
-      const scoreEl = document.getElementById('animated-score');
-      if (scoreEl && riskData) {
-        let start = 0;
-        const end = riskData.score;
-        const duration = 1200;
-        const interval = 20;
-        const step = end / (duration / interval) || 0;
-        const timer = setInterval(() => {
-          start += step;
-          if (start >= end) {
-            start = end;
-            clearInterval(timer);
-          }
-          scoreEl.textContent = Math.round(start);
-        }, interval);
-      }
-
-      const confEl = document.getElementById('animated-confidence');
-      if (confEl && riskData) {
-        let startConf = 0;
-        const endConf = riskData.confidence;
-        const durationConf = 1200;
-        const intervalConf = 20;
-        const stepConf = endConf / (durationConf / intervalConf) || 0;
-        const timerConf = setInterval(() => {
-          startConf += stepConf;
-          if (startConf >= endConf) {
-            startConf = endConf;
-            clearInterval(timerConf);
-          }
-          confEl.textContent = Math.round(startConf);
-        }, intervalConf);
-      }
-    }, 50);
-  }
 }
 
-// ─────────────────────────────
-// MAIN SECURITY CHECK
-// ─────────────────────────────
-
 async function checkSecurity() {
-
-  const input =
-    document.getElementById('urlInput').value;
-
-  const validation =
-    formatAndValidateUrl(input);
-
-  // Validation failed
-
-  if (!validation.valid) {
-
-    showResult(
-      'error',
-      'Invalid Input',
-      validation.error,
-      '',
-      []
-    );
-
+  const input = document.getElementById('urlInput').value.trim();
+  if (!input) {
+    showResult('error', 'Enter a URL', 'Please type a URL to scan above.', '', []);
     return;
   }
 
@@ -474,24 +367,7 @@ async function checkSecurity() {
       const allThreats = data.matches.map(m => m.threatType);
       updateStats('danger', allThreats);
       showResult('danger', 'Threat Detected!',
-        `This URL is flagged as dangerous. Do not visit it.<br><br>
-        <div class="breakdown">
-          <div class="breakdown-item">
-            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure'}
-          </div>
-          <div class="breakdown-item">
-            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
-          </div>
-        </div>`, url, threats);
+        'This URL is flagged as dangerous. Do not visit it.', url, threats);
     } else {
       updateStats('safe', []);
       const urlObj = new URL(url);
@@ -524,15 +400,13 @@ async function checkSecurity() {
     }
 
   } catch (err) {
-    showResult('error', 'Scan Error',
-      `An unexpected error occurred.<br>
+    showResult('error', 'Backend Not Connected',
+      `Make sure your backend server is running.<br>
        <small style="color:#334155">Error: ${err.message}</small>`,
       '', []);
   } finally {
     btn.disabled = false;
-
   }
-
 }
 
 document.getElementById('urlInput').addEventListener('keydown', e => {
