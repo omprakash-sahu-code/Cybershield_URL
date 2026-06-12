@@ -3,7 +3,7 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 
 try {
-  require("dotenv").config();
+  require("dotenv").config({ quiet: true });
 } catch {
   // dotenv is optional in this project environment.
 }
