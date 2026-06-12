@@ -1,70 +1,70 @@
-// ─────────────────────────────
-// LOADER & THEME
-// ─────────────────────────────
-
-document.addEventListener('DOMContentLoaded', () => {
-  const loader = document.getElementById('loader');
-  const main = document.getElementById('mainPage');
-  if (loader && main) {
-    if (sessionStorage.getItem('introShown')) {
-      loader.style.display = 'none';
-      main.classList.remove('hidden');
-    } else {
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          loader.classList.add('fade-out');
-          setTimeout(() => {
-            loader.style.display = 'none';
-            main.classList.remove('hidden');
-            sessionStorage.setItem('introShown', 'true');
-          }, 500);
-        }, 3200);
-      });
-    }
-  }
-});
-
-window.addEventListener('pageshow', (event) => {
-  if (event.persisted && sessionStorage.getItem('introShown')) {
-    const loader = document.getElementById('loader');
-    const main = document.getElementById('mainPage');
-    if (loader) loader.style.display = 'none';
-    if (main) {
-      main.classList.remove('hidden');
-      main.style.animation = 'none';
-      main.style.opacity = '1';
-    }
-  }
-});
-
+// ═══════════════════════════════════
+// THEME — prevent flash
+// ═══════════════════════════════════
 (function initTheme() {
-  const btn = document.getElementById('themeToggle');
   const saved = localStorage.getItem('theme') || 'dark';
-  applyTheme(saved);
+  if (saved === 'light') document.documentElement.classList.add('light-mode');
+})();
 
+// ═══════════════════════════════════
+// LOADER — skip on back-navigation
+// ═══════════════════════════════════
+window.addEventListener('load', () => {
+  const loader = document.getElementById('loader');
+  const main   = document.getElementById('mainPage');
+  if (!loader || !main) return;
+
+  if (sessionStorage.getItem('introShown')) {
+    loader.style.display = 'none';
+    main.classList.remove('hidden');
+  } else {
+    setTimeout(() => {
+      loader.classList.add('fade-out');
+      setTimeout(() => {
+        loader.style.display = 'none';
+        main.classList.remove('hidden');
+        sessionStorage.setItem('introShown', 'true');
+      }, 500);
+    }, 3200);
+  }
+});
+
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) {
+    const loader = document.getElementById('loader');
+    const main   = document.getElementById('mainPage');
+    if (loader) loader.style.display = 'none';
+    if (main)   { main.classList.remove('hidden'); main.style.opacity = '1'; }
+  }
+});
+
+// ═══════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('themeToggle');
   if (btn) {
     btn.addEventListener('click', () => {
-      const isLight = document.documentElement.classList.contains('light-mode');
-      applyTheme(isLight ? 'dark' : 'light');
+      const isLight = document.documentElement.classList.toggle('light-mode');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
     });
   }
 
-  function applyTheme(theme) {
-    if (theme === 'light') {
-      document.documentElement.classList.add('light-mode');
-      if (btn) btn.textContent = '☀️';
-    } else {
-      document.documentElement.classList.remove('light-mode');
-      if (btn) btn.textContent = '🌙';
-    }
-    localStorage.setItem('theme', theme);
+  // Keyboard submit
+  const chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
   }
-})();
+});
 
-// ─────────────────────────────
-// SCAM DETECTOR LOGIC
-// ─────────────────────────────
-
+// ═══════════════════════════════════
+// SCAM DETECTOR
+// ═══════════════════════════════════
 let conversationHistory = [];
 
 const TEMPLATES = {
@@ -85,93 +85,66 @@ function fillTemplate(type) {
 
 function adjustTextareaHeight(el) {
   el.style.height = 'auto';
-  el.style.height = (el.scrollHeight) + 'px';
+  el.style.height = el.scrollHeight + 'px';
 }
 
 function clearChat() {
   conversationHistory = [];
   const historyDiv = document.getElementById('chatHistory');
-  if (historyDiv) {
-    historyDiv.innerHTML = `
-      <div class="chat-msg robot">
-        <div class="chat-avatar">🛡️</div>
-        <div class="chat-bubble">
-          <strong>Chat Cleared!</strong>
-          <p class="chat-welcome-text">
-            Paste any suspicious message above and click Verify to analyze it.
-          </p>
-        </div>
+  if (!historyDiv) return;
+  historyDiv.innerHTML = `
+    <div class="chat-msg robot">
+      <div class="chat-avatar">🛡️</div>
+      <div class="chat-bubble">
+        <strong>Chat cleared.</strong>
+        <p class="chat-welcome-text">Paste a suspicious message above and click Analyze to inspect it.</p>
       </div>
-    `;
-  }
+    </div>`;
 }
 
 async function sendMessage() {
-  const input = document.getElementById('chatInput');
+  const input   = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendBtn');
-  const historyDiv = document.getElementById('chatHistory');
-  const typing = document.getElementById('typingIndicator');
+  const typing  = document.getElementById('typingIndicator');
 
-  const text = input.value.trim();
+  const text = input ? input.value.trim() : '';
   if (!text) return;
 
-  // Disable input/button
   input.value = '';
   input.style.height = 'auto';
   input.disabled = true;
   sendBtn.disabled = true;
 
-  // Append user bubble
   appendMessage('user', text);
   scrollToBottom();
 
-  // Show typing dot indicator
-  if (typing) {
-    typing.classList.remove('hidden');
-    scrollToBottom();
-  }
+  if (typing) { typing.classList.remove('hidden'); scrollToBottom(); }
+
+  const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:3000'
+    : 'https://cybershield-sxz0.onrender.com';
 
   try {
-    const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:3002'
-      : 'https://cybershield-sxz0.onrender.com';
-
     const response = await fetch(`${apiHost}/api/scam-detect`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        message: text,
-        history: conversationHistory
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history: conversationHistory })
     });
 
-    if (!response.ok) {
-      throw new Error(`Server returned status: ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`Server status: ${response.status}`);
     const report = await response.json();
 
-    // Hide typing indicator
-    if (typing) {
-      typing.classList.add('hidden');
-    }
+    if (typing) typing.classList.add('hidden');
 
-    // Append AI bubble with structured report
     appendAnalysisReport(report);
     scrollToBottom();
 
-    // Save history (we serialize our memory)
-    conversationHistory.push({ role: 'user', text: text });
-    // Save model's explanation response as the context text
+    conversationHistory.push({ role: 'user', text });
     conversationHistory.push({ role: 'model', text: report.explanation });
 
   } catch (err) {
-    if (typing) {
-      typing.classList.add('hidden');
-    }
-    appendMessage('robot', `⚠️ <strong>Error analyzing message:</strong> ${err.message}. Make sure the backend server is running.`);
+    if (typing) typing.classList.add('hidden');
+    appendMessage('robot', `⚠️ <strong>Analysis failed:</strong> ${escapeHTML(err.message)}. Make sure the backend server is running.`);
     scrollToBottom();
   } finally {
     input.disabled = false;
@@ -189,17 +162,11 @@ function appendMessage(role, messageText) {
 
   if (role === 'user') {
     msgDiv.innerHTML = `
-      <div class="chat-bubble user-bubble">
-        ${escapeHTML(messageText)}
-      </div>
-    `;
+      <div class="chat-bubble user-bubble">${escapeHTML(messageText)}</div>`;
   } else {
     msgDiv.innerHTML = `
       <div class="chat-avatar">🛡️</div>
-      <div class="chat-bubble">
-        ${messageText}
-      </div>
-    `;
+      <div class="chat-bubble">${messageText}</div>`;
   }
 
   historyDiv.appendChild(msgDiv);
@@ -212,69 +179,52 @@ function appendAnalysisReport(report) {
   const classification = report.classification || 'safe';
 
   const categories = {
-    phishing: '🎣 Phishing / Credential Theft',
-    fake_job: '💼 Fake Job Offer',
-    otp_fraud: '🛡️ OTP / PIN Fraud',
-    investment_scam: '📉 Investment Scam',
-    impersonation: '👤 Impersonation Fraud',
-    other: '⚠️ Suspicious Request',
-    none: '✅ Safe Communication'
+    phishing:         '🎣 Phishing / Credential Theft',
+    fake_job:         '💼 Fake Job Offer',
+    otp_fraud:        '🛡️ OTP / PIN Fraud',
+    investment_scam:  '📉 Investment Scam',
+    impersonation:    '👤 Impersonation Fraud',
+    other:            '⚠️ Suspicious Request',
+    none:             '✅ Safe Communication'
   };
 
-  const scamLabel = categories[report.scamType] || 'General Text';
+  const scamLabel = categories[report.scamType] || 'General Analysis';
 
   const reportHtml = `
     <div class="report-header-row">
-      <span class="report-badge classification-${classification}">
-        ${classification}
-      </span>
-      <span class="report-scam-type">
-        ${scamLabel}
-      </span>
+      <span class="report-badge classification-${classification}">${classification.toUpperCase()}</span>
+      <span class="report-scam-type">${scamLabel}</span>
     </div>
-
-    <!-- Explanation -->
-    <p class="report-explanation">
-      ${escapeHTML(report.explanation).replace(/\n/g, '<br>')}
-    </p>
-
-    <!-- Score & Progress -->
+    <p class="report-explanation">${escapeHTML(report.explanation || '').replace(/\n/g, '<br>')}</p>
     <div class="report-score-section">
       <div class="report-score-labels">
         <span>Threat Confidence</span>
-        <span>${report.confidence}%</span>
+        <span>${report.confidence || 0}%</span>
       </div>
       <div class="report-progress-track">
-        <div class="report-progress-bar classification-${classification}" style="width: ${report.confidence}%;"></div>
+        <div class="report-progress-bar classification-${classification}" style="width:${report.confidence || 0}%"></div>
       </div>
     </div>
-
-    <!-- Actionable Advice -->
     <div class="report-advice-box classification-${classification}">
-      <strong class="report-advice-title">Advice:</strong> ${escapeHTML(report.actionableAdvice)}
-    </div>
-  `;
+      <strong class="report-advice-title">Advice: </strong>${escapeHTML(report.actionableAdvice || '')}
+    </div>`;
 
   const msgDiv = document.createElement('div');
   msgDiv.className = 'chat-msg robot';
   msgDiv.innerHTML = `
     <div class="chat-avatar">🤖</div>
-    <div class="chat-bubble report-bubble classification-border-${classification}">
-      ${reportHtml}
-    </div>
-  `;
+    <div class="chat-bubble report-bubble classification-border-${classification}">${reportHtml}</div>`;
 
   historyDiv.appendChild(msgDiv);
 }
 
 function scrollToBottom() {
   const historyDiv = document.getElementById('chatHistory');
-  if (historyDiv) {
-    historyDiv.scrollTop = historyDiv.scrollHeight;
-  }
+  if (historyDiv) historyDiv.scrollTop = historyDiv.scrollHeight;
 }
 
 function escapeHTML(str) {
+  if (typeof str !== 'string') return '';
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -282,10 +232,3 @@ function escapeHTML(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
-
-document.getElementById('chatInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});

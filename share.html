@@ -1,161 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <title>CyberShield Shared Report</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberShield — Shared Report</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <script>
+    (function() {
+      const t = localStorage.getItem('theme') || 'dark';
+      if (t === 'light') document.documentElement.classList.add('light-mode');
+    })();
+  </script>
   <style>
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #f8fafc;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-
-    .card {
-      width: 100%;
-      max-width: 700px;
-      background: #111827;
-      border: 1px solid #1e293b;
-      border-radius: 18px;
-      padding: 32px;
-      box-shadow: 0 0 40px rgba(0,0,0,0.4);
-    }
-
-    h1 {
-      color: #00ffb4;
-      margin-bottom: 10px;
-    }
-
-    .label {
-      color: #94a3b8;
-      margin-top: 20px;
-      font-size: 14px;
-    }
-
-    .value {
-      font-size: 18px;
-      margin-top: 6px;
-      word-break: break-word;
-    }
-
-    .safe {
-      color: #00ffb4;
-      font-weight: bold;
-    }
-
-    .danger {
-      color: #f87171;
-      font-weight: bold;
-    }
-
-    .tag {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      background: #7f1d1d;
-      color: #fecaca;
-      margin: 6px 6px 0 0;
-      font-size: 14px;
-    }
-
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .share-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-top: 20px; margin-bottom: 6px; }
+    .share-value { font-size: 16px; color: var(--text); word-break: break-word; }
+    .share-value.safe   { color: var(--safe-color); font-weight: 700; }
+    .share-value.danger { color: var(--danger-color); font-weight: 700; }
+    .share-tag { display: inline-block; padding: 4px 12px; border-radius: 6px; background: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger-color); margin: 4px 4px 0 0; font-size: 12px; font-weight: 600; }
+    .loading-msg { color: var(--text-muted); text-align: center; padding: 40px; font-size: 14px; }
+    .error-msg   { color: var(--danger-color); text-align: center; padding: 40px; font-size: 14px; }
   </style>
-
 </head>
-
 <body>
 
-  <div class="card">
+  <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle theme">
+    <div class="toggle-icon-wrap">
+      <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41m12.72-12.72l-1.41 1.41"/>
+      </svg>
+      <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+      </svg>
+    </div>
+  </button>
 
-    <h1>🛡️ CyberShield Shared Report</h1>
+  <div class="share-card" style="position:relative; z-index:1">
+    <div class="logo-badge" style="margin-bottom:20px"><div class="dot"></div>CyberShield Shared Report</div>
 
-    <div class="label">Scanned URL</div>
-    <div class="value" id="url"></div>
+    <div id="reportContent">
+      <p class="loading-msg">Loading report…</p>
+    </div>
 
-    <div class="label">Result</div>
-    <div class="value" id="result"></div>
-
-    <div class="label">Risk Score</div>
-    <div class="value" id="risk"></div>
-
-    <div class="label">Threats</div>
-    <div class="value" id="threats"></div>
-
-    <div class="label">Generated At</div>
-    <div class="value" id="created"></div>
-
+    <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--card-border)">
+      <a href="index.html" class="scan-btn" style="display:inline-flex">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Scan Your Own URL
+      </a>
+    </div>
   </div>
 
   <script>
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const isLight = document.documentElement.classList.toggle('light-mode');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    });
 
     async function loadReport() {
-
-      const params =
-        new URLSearchParams(window.location.search);
-
-      const id = params.get('id');
+      const params = new URLSearchParams(window.location.search);
+      const id     = params.get('id');
+      const el     = document.getElementById('reportContent');
 
       if (!id) {
-        alert("Invalid share link");
+        el.innerHTML = '<p class="error-msg">Invalid share link — no report ID found.</p>';
         return;
       }
 
-      const response =
-        await fetch(`http://localhost:3002/share/${id}`);
+      const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:3000'
+        : 'https://cybershield-sxz0.onrender.com';
 
-      const data = await response.json();
+      try {
+        const response = await fetch(`${apiHost}/share/${id}`);
+        if (!response.ok) throw new Error(`Status ${response.status}`);
+        const data = await response.json();
 
-      document.getElementById('url').textContent =
-        data.url;
+        const isSafe      = data.resultType && data.resultType.includes('Safe');
+        const statusClass = isSafe ? 'safe' : 'danger';
 
-      const resultEl =
-        document.getElementById('result');
+        el.innerHTML = `
+          <div class="share-label">Scanned URL</div>
+          <div class="share-value" style="font-family:monospace; font-size:14px">${data.url || '—'}</div>
 
-      resultEl.textContent =
-        data.resultType;
+          <div class="share-label">Result</div>
+          <div class="share-value ${statusClass}">${data.resultType || '—'}</div>
 
-      resultEl.className =
-        data.resultType.includes('Safe')
-          ? 'value safe'
-          : 'value danger';
+          <div class="share-label">Risk Score</div>
+          <div class="share-value">${data.riskScore != null ? data.riskScore + '/100' : '—'}</div>
 
-      document.getElementById('risk').textContent =
-        data.riskScore + "/100";
+          <div class="share-label">Threats</div>
+          <div class="share-value">
+            ${!data.threats || data.threats.length === 0
+              ? '<span style="color:var(--safe-color); font-weight:600">✓ No threats detected</span>'
+              : data.threats.map(t => `<span class="share-tag">${t}</span>`).join('')
+            }
+          </div>
 
-      const threatsEl =
-        document.getElementById('threats');
+          <div class="share-label">Generated At</div>
+          <div class="share-value" style="font-size:14px; color:var(--text-sub)">
+            ${data.createdAt ? new Date(data.createdAt).toLocaleString() : '—'}
+          </div>`;
 
-      if (data.threats.length === 0) {
-
-        threatsEl.innerHTML =
-          '<span class="safe">No threats detected</span>';
-
-      } else {
-
-        threatsEl.innerHTML =
-          data.threats
-            .map(t => `<span class="tag">${t}</span>`)
-            .join('');
-
+      } catch (err) {
+        el.innerHTML = `<p class="error-msg">Could not load report.<br><small>Make sure the backend is running. (${err.message})</small></p>`;
       }
-
-      document.getElementById('created').textContent =
-        new Date(data.createdAt).toLocaleString();
-
     }
 
     loadReport();
-
   </script>
-
 </body>
 </html>
