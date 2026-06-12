@@ -16,14 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         loader.classList.add('fade-out');
 
-        setTimeout(() => {
-          loader.style.display = 'none';
-          main.classList.remove('hidden');
-          sessionStorage.setItem('introShown', 'true');
+    setTimeout(() => {
+      loader.style.display = 'none';
+      main.classList.remove('hidden');
 
-          // Move focus to main content after loader for screen readers
-          main.setAttribute('tabindex', '-1');
-          main.focus();
+      // Move focus to main content after loader for screen readers
+      main.setAttribute('tabindex', '-1');
+      main.focus();
+
+    }, 500);
 
         }, 500);
 
@@ -562,19 +563,13 @@ function showResult(type, title, desc, url, threats) {
         <div class="result-desc">${desc}</div>
         ${url ? `<div class="result-url" aria-label="Scanned URL: ${url}">${url}</div>` : ''}
         ${threats && threats.length
-      ? `<div class="threat-tags" role="list" aria-label="Detected threats">${threats.map(t =>
-        `<span class="threat-tag" role="listitem">${t}</span>`).join('')}</div>`
-      : ''}
+          ? `<div class="threat-tags" role="list" aria-label="Detected threats">${threats.map(t =>
+              `<span class="threat-tag" role="listitem">${t}</span>`).join('')}</div>`
+          : ''}
         ${(type === 'safe' || type === 'danger') ? `
           <div class="export-btns">
             <button type="button" onclick="downloadPDF()" class="export-btn export-btn-pdf" aria-label="Download scan report as PDF">⬇ Download PDF</button>
             <button type="button" onclick="downloadImage()" class="export-btn export-btn-img" aria-label="Download scan report as image">⬇ Download Image</button>
-            <button type="button"
-  onclick="shareReport()"
-  class="export-btn"
-  aria-label="Share scan report">
-  🔗 Share Report
-</button>
           </div>` : ''}
       </div>
     </div>`;
@@ -585,8 +580,8 @@ function showResult(type, title, desc, url, threats) {
   resultEl.focus();
 
   if (riskSectionHtml) {
-    // Append risk section inside result div, after the result card
-    resultEl.insertAdjacentHTML('beforeend', riskSectionHtml);
+    // Append risk section after result card
+    resultEl.querySelector('.result-card').insertAdjacentHTML('beforeend', riskSectionHtml);
 
     setTimeout(() => {
       const bar = document.querySelector('.risk-meter-bar');
@@ -773,27 +768,6 @@ async function checkSecurity() {
             <span class="sr-only">${hasHarmful ? 'Detected' : 'Clear'}:</span>
             <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
-        </div>`, url, threats);
-
-      addToHistory(url, 'DANGER', {
-        title: 'Threat Detected!',
-        desc: `This URL is flagged as dangerous. Do not visit it.<br><br>
-        <div class="breakdown">
-          <div class="breakdown-item">
-            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure'}
-          </div>
-          <div class="breakdown-item">
-            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
-          </div>
         </div>`,
         threats: threats,
         resultType: 'danger'
@@ -837,27 +811,6 @@ async function checkSecurity() {
             <span class="sr-only">${hasHarmful ? 'Detected' : 'Clear'}:</span>
             <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
-        </div>`, url, []);
-
-      addToHistory(url, 'SAFE', {
-        title: 'URL is Safe',
-        desc: `No threats detected. Google Safe Browsing found no issues.<br><br>
-        <div class="breakdown">
-          <div class="breakdown-item">
-            ${isHttps ? '✅' : '⚠️'} <b>HTTPS:</b> ${isHttps ? 'Secure connection' : 'Not secure — use with caution'}
-          </div>
-          <div class="breakdown-item">
-            ${hasMalware ? '🔴' : '✅'} <b>Malware:</b> ${hasMalware ? 'Detected!' : 'No malware detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasPhishing ? '🔴' : '✅'} <b>Phishing:</b> ${hasPhishing ? 'Phishing detected!' : 'No phishing detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasUnwanted ? '🔴' : '✅'} <b>Unwanted Software:</b> ${hasUnwanted ? 'Detected!' : 'None detected'}
-          </div>
-          <div class="breakdown-item">
-            ${hasHarmful ? '🔴' : '✅'} <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
-          </div>
         </div>`,
         threats: [],
         resultType: 'safe'
@@ -881,9 +834,6 @@ async function checkSecurity() {
 
   } finally {
 
-    btn.disabled = false;
-
-} finally {
     btn.disabled = false;
     btn.removeAttribute('aria-busy');
     btn.setAttribute('aria-label', 'Scan the entered URL for security threats');
@@ -950,6 +900,7 @@ async function downloadPDF() {
   pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
   pdf.save('cybershield-report.pdf');
 }
+
 // ─────────────────────────────
 // HISTORY PANEL (localStorage)
 // ─────────────────────────────
@@ -1188,77 +1139,3 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 })();
-
-// ─────────────────────────────
-// SHARE REPORT
-// ─────────────────────────────
-
-async function shareReport() {
-
-  try {
-
-    const resultUrl =
-      document.querySelector('.result-url')?.textContent;
-
-    const resultTitle =
-      document.querySelector('.result-title')?.textContent;
-
-    const threatTags =
-      [...document.querySelectorAll('.threat-tag')]
-        .map(tag => tag.textContent);
-
-    const riskScore =
-      document.getElementById('animated-score')?.textContent || 0;
-
-    if (!resultUrl || !resultTitle) {
-      alert("No scan report available to share.");
-      return;
-    }
-
-    const apiHost =
-      (window.location.hostname === 'localhost' ||
-       window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:3002'
-      : 'https://cybershield-sxz0.onrender.com';
-
-    const response = await fetch(`${apiHost}/share`, {
-
-      method: 'POST',
-
-      headers: {
-        'Content-Type': 'application/json'
-      },
-
-      body: JSON.stringify({
-        url: resultUrl,
-        resultType: resultTitle,
-        threats: threatTags,
-        riskScore
-      })
-
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to generate share link");
-    }
-
-    // Copy link automatically
-    await navigator.clipboard.writeText(data.shareUrl);
-
-    alert(
-      `Share link copied to clipboard!\n\n${data.shareUrl}`
-    );
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert(
-      "Failed to share report."
-    );
-
-  }
-
-}

@@ -1287,147 +1287,27 @@ input[type="text"].input-error {
   .team-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Scanner 2-column layout (main + history) ── */
-.scanner-layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
+/* ── Accessibility: Focus styles ── */
+:focus-visible {
+  outline: 2px solid #00ffb4;
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
-@media (min-width: 900px) {
-  /* Two columns: full-width main (left) + fixed history (right) */
-  .scanner-layout {
-    grid-template-columns: minmax(0, 1fr) 280px;
-    align-items: start;
-  }
-
-  /* Force deterministic placement */
-  .scanner-main {
-    grid-column: 1 !important;
-    justify-self: stretch;
-  }
-
-  aside.history-panel {
-    grid-column: 2 !important;
-    justify-self: stretch;
-    width: 100%;
-  }
-
-  /* Ensure result card fills the available left column width */
-  .scanner-main #result,
-  .scanner-main #riskAnalysis {
-    width: 100%;
-  }
-
-  .scanner-main #result .result-card {
-    width: 100%;
-  }
+/* Remove default focus for mouse users only */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
-
-
-
-/* ── History Panel ── */
-.history-panel {
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  border-radius: 16px;
-  padding: 16px;
-  min-width: 0;
-
-  /* Keep buttons clickable and avoid being covered */
-  position: relative;
-  z-index: 10;
-}
-
-.history-list {
-  max-height: 320px;
-  overflow: auto;
-  padding-right: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-@media (max-width: 600px) {
-  .history-list {
-    max-height: 220px;
-  }
-}
-
-.history-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.history-panel h3 {
-  font-size: 14px;
-  color: var(--accent-1);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-
-.history-meta {
-  font-size: 12px;
-  color: var(--subtitle-color);
-}
-
-.history-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-}
-
-.history-item:hover {
-  border-color: var(--accent-1);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
-}
-
-.history-item button {
-  background: none;
-  border: 0;
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   padding: 0;
-  margin: 0;
-  cursor: pointer;
-  color: inherit;
-  text-align: left;
-  flex: 1;
-}
-
-.history-item button:focus-visible {
-  outline: 2px solid rgba(var(--accent-1-rgb), 0.65);
-  outline-offset: 2px;
-  border-radius: 8px;
-}
-
-.history-url {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: var(--text-color);
-  word-break: break-word;
-  line-height: 1.4;
-}
-
-.history-at {
-  font-size: 11px;
-  color: var(--subtitle-color);
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+  border: 0;
 }
-
-/* ── Ensure the long URL report spans wide (until Scan button width) ── */
-#result .result-url {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  max-width: 100%;
-}
-
-
