@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  const loader = document.getElementById('loader');
+ 
   const main = document.getElementById('mainPage');
 
   if (sessionStorage.getItem('introShown')) {
