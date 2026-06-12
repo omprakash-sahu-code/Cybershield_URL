@@ -133,7 +133,7 @@ async function sendMessage() {
 
   try {
     const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:3000'
+      ? 'http://localhost:3002'
       : 'https://cybershield-sxz0.onrender.com';
 
     const response = await fetch(`${apiHost}/api/scam-detect`, {

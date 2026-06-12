@@ -63,7 +63,32 @@
           <span class="example-chip" onclick="fillExample('http://testsafebrowsing.appspot.com/s/malware.html')">malware test</span>
         </div>
 
-        <div id="result"></div>
+        <!-- Drag & Drop Upload Zone -->
+        <div class="upload-zone" id="uploadZone" tabindex="0" aria-label="Drag and drop a screenshot containing a URL to scan, or click to upload">
+          <div class="upload-content" id="uploadContent">
+            <svg class="upload-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <p class="upload-text">Drag & drop a screenshot or <span class="upload-browse">browse</span></p>
+            <p class="upload-hint">Supports PNG, JPG, JPEG, WEBP containing URLs</p>
+          </div>
+          <input type="file" id="fileInput" accept="image/*" class="sr-only" tabIndex="-1">
+          <div class="upload-preview hidden" id="uploadPreview">
+            <img id="previewImage" src="" alt="Screenshot Preview">
+            <div class="preview-overlay">
+              <div class="scanner-laser"></div>
+              <div class="preview-status" id="previewStatus">Scanning Image...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result -->
+        <div id="result" aria-live="polite" aria-atomic="true" role="status"></div>
+
+        <!-- =========================
+     Risk Analysis Section
       </div>
 
       <!-- Stats -->

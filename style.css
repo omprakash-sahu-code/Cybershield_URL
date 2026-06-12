@@ -618,5 +618,208 @@ input[type="text"]:focus {
 }
 
 @media (max-width: 380px) {
-  .team-grid { grid-template-columns: repeat(2, 1fr); }
+  .team-grid { grid-template-columns: 1fr; }
+}
+
+/* ════════════════════════════
+   TYPOSQUATTING FAMILY TREE SECTION
+   ════════════════════════════ */
+.tree-container svg {
+  user-select: none;
+}
+
+.node circle {
+  transition: r 0.2s ease, filter 0.2s ease;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.15));
+}
+
+.node:hover circle {
+  r: 12px !important;
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+.node.category:hover circle {
+  r: 9px !important;
+}
+
+.node.variant:hover circle {
+  r: 7px !important;
+}
+
+.node text {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: fill 0.3s ease;
+}
+
+.link {
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+.tree-tooltip {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  border-color: var(--card-border) !important;
+  background: var(--card-bg) !important;
+}
+
+/* Light Mode Overrides for Family Tree */
+.light-mode .node text {
+  fill: #1e293b !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+.light-mode .tree-tooltip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #1e293b !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.light-mode .tree-tooltip div {
+  color: #0f172a !important;
+}
+
+.light-mode .link {
+  stroke: rgba(100, 116, 139, 0.4) !important;
+}
+
+/* Drag & Drop Upload Zone Styles */
+.upload-zone {
+  margin-top: 24px;
+  background: var(--input-bg);
+  border: 2px dashed var(--input-border);
+  border-radius: 16px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.upload-zone:focus-visible {
+  outline: 2px solid var(--accent-1);
+  outline-offset: 2px;
+}
+
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--accent-1);
+  background: rgba(var(--accent-1-rgb), 0.03);
+  box-shadow: 0 0 20px rgba(var(--accent-1-rgb), 0.1);
+}
+
+.upload-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--accent-1);
+  opacity: 0.8;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.upload-zone:hover .upload-icon, .upload-zone.dragover .upload-icon {
+  transform: translateY(-4px);
+  color: var(--accent-2);
+}
+
+.upload-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.upload-browse {
+  color: var(--accent-1);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: var(--subtitle-color);
+}
+
+/* Upload Preview styling */
+.upload-preview {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+#previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.preview-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 5;
+}
+
+.light-mode .preview-overlay {
+  background: rgba(248, 250, 252, 0.85);
+}
+
+/* Scanning laser line */
+.scanner-laser {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2.5px;
+  background: linear-gradient(90deg, transparent, var(--accent-1), transparent);
+  animation: laserScan 2s ease-in-out infinite;
+  box-shadow: 0 0 10px var(--accent-1);
+  z-index: 6;
+}
+
+@keyframes laserScan {
+  0% { top: 0%; }
+  50% { top: 100%; }
+  100% { top: 0%; }
+}
+
+.preview-status {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-color);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  animation: pulseText 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseText {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Highlight matching error / status inside upload zone */
+.upload-zone.upload-error {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.upload-zone.upload-success {
+  border-color: var(--safe-color);
+  background: rgba(var(--accent-1-rgb), 0.03);
 }

@@ -166,3 +166,124 @@ test("generates and filters typosquatting variants correctly", async () => {
     assert.ok(v.threat === "suspicious" || v.threat === "malicious");
   });
 });
+
+async function runApiRequest(app, endpoint, body) {
+  const server = app.listen(0);
+  const { port } = server.address();
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    return {
+      status: response.status,
+      body: await response.json()
+    };
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+
+test("returns 400 for missing image parameter in extract-url", async () => {
+  const app = createApp({
+    apiKey: "test-key"
+  });
+
+  const result = await runApiRequest(app, "/api/extract-url", {});
+  assert.equal(result.status, 400);
+  assert.equal(result.body.error, "No image data provided");
+});
+
+test("returns 400 for invalid image format in extract-url", async () => {
+  const app = createApp({
+    apiKey: "test-key"
+  });
+
+  const result = await runApiRequest(app, "/api/extract-url", { image: "not-a-base64-data-url" });
+  assert.equal(result.status, 400);
+  assert.equal(result.body.error, "Invalid image data format. Must be a base64 data URL");
+});
+
+test("returns 500 when geminiKey is missing in extract-url", async () => {
+  const originalKey = process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+
+  const app = createApp({
+    apiKey: "test-key"
+  });
+
+  try {
+    const result = await runApiRequest(app, "/api/extract-url", { image: "data:image/png;base64,iVBORw" });
+    assert.equal(result.status, 500);
+    assert.equal(result.body.error, "Missing Gemini API key configuration");
+  } finally {
+    process.env.GEMINI_API_KEY = originalKey;
+  }
+});
+
+test("returns extracted URL when Gemini OCR call is successful", async () => {
+  const originalKey = process.env.GEMINI_API_KEY;
+  process.env.GEMINI_API_KEY = "dummy-key";
+
+  const mockGeminiResponse = {
+    candidates: [{
+      content: {
+        parts: [{
+          text: "https://example.com"
+        }]
+      }
+    }]
+  };
+
+  const app = createApp({
+    geminiKey: "dummy-key",
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => mockGeminiResponse
+    })
+  });
+
+  try {
+    const result = await runApiRequest(app, "/api/extract-url", { image: "data:image/png;base64,iVBORw" });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.url, "https://example.com");
+  } finally {
+    process.env.GEMINI_API_KEY = originalKey;
+  }
+});
+
+test("returns null URL when Gemini OCR call returns NONE", async () => {
+  const originalKey = process.env.GEMINI_API_KEY;
+  process.env.GEMINI_API_KEY = "dummy-key";
+
+  const mockGeminiResponse = {
+    candidates: [{
+      content: {
+        parts: [{
+          text: "NONE"
+        }]
+      }
+    }]
+  };
+
+  const app = createApp({
+    geminiKey: "dummy-key",
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => mockGeminiResponse
+    })
+  });
+
+  try {
+    const result = await runApiRequest(app, "/api/extract-url", { image: "data:image/png;base64,iVBORw" });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.url, null);
+  } finally {
+    process.env.GEMINI_API_KEY = originalKey;
+  }
+});
