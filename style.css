@@ -130,7 +130,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: logoPulse 2s ease-in-out infinite;
+  animation: logoPulse 1s ease-in-out infinite;
 }
 
 @keyframes logoPulse {
