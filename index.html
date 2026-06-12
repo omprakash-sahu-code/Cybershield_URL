@@ -244,7 +244,33 @@
           <div class="section-tag">The Team</div>
 
           <h2 class="team-title">
-          
+            Meet the builders
+          </h2>
+
+          <p class="team-sub">
+            The people who made CyberShield possible
+          </p>
+
+        </div>
+
+        <!-- Toggle Button -->
+        <button type="button" class="team-toggle" id="teamToggle" onclick="toggleTeam()" aria-label="Show team members"
+          aria-expanded="false" aria-controls="teamGridWrap">
+
+          <svg aria-hidden="true" id="toggleIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+
+        </button>
+
+        <!-- Team Grid -->
+        <div class="team-grid-wrap" id="teamGridWrap">
+          <div class="team-grid" id="teamGrid"></div>
+        </div>
+
+      </div>
+
       <!-- Footer -->
       <footer class="main-footer">
 

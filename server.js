@@ -587,7 +587,92 @@ function createApp(options = {}) {
       });
     }
   });
+  app.get("/domain-info", async (req, res) => {
+  const { domain } = req.query;
 
+  if (!domain || typeof domain !== "string") {
+    return res.status(400).json({ error: "No domain provided" });
+  }
+
+  // Extract clean hostname
+  let hostname;
+  try {
+    hostname = new URL(domain.startsWith("http") ? domain : "https://" + domain).hostname;
+  } catch {
+    return res.status(400).json({ error: "Invalid domain" });
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const response = await fetchImpl(
+      `https://rdap.org/domain/${hostname}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      return res.status(502).json({ error: "RDAP lookup failed", detail: response.status });
+    }
+
+    const data = await response.json();
+
+    // Parse registration and expiry dates
+    const events = data.events || [];
+    const getEvent = (type) => events.find(e => e.eventAction === type)?.eventDate || null;
+
+    const registered = getEvent("registration");
+    const expiry = getEvent("expiration");
+    const updated = getEvent("last changed");
+
+    // Calculate domain age in years
+    let ageYears = null;
+    if (registered) {
+      const ms = Date.now() - new Date(registered).getTime();
+      ageYears = (ms / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
+    }
+
+    // Extract registrar
+    const registrar = data.entities
+      ?.find(e => e.roles?.includes("registrar"))
+      ?.vcardArray?.[1]
+      ?.find(f => f[0] === "fn")?.[3] || null;
+
+    // Extract nameservers
+    const nameservers = (data.nameservers || []).map(ns => ns.ldhName).slice(0, 4);
+
+    // Trust score — simple heuristic
+    let trustScore = 50;
+    if (ageYears !== null) {
+      if (ageYears > 5) trustScore += 30;
+      else if (ageYears > 2) trustScore += 15;
+      else if (ageYears < 0.5) trustScore -= 20;
+    }
+    if (nameservers.length >= 2) trustScore += 10;
+    if (expiry) {
+      const daysToExpiry = (new Date(expiry) - Date.now()) / (1000 * 60 * 60 * 24);
+      if (daysToExpiry < 30) trustScore -= 20;
+    }
+    trustScore = Math.min(100, Math.max(0, trustScore));
+
+    return res.json({
+      domain: hostname,
+      registered,
+      expiry,
+      updated,
+      ageYears,
+      registrar,
+      nameservers,
+      trustScore,
+      status: data.status || []
+    });
+
+  } catch (err) {
+    console.error("[DOMAIN-INFO ERROR]", err.message);
+    return res.status(500).json({ error: "Domain lookup failed", detail: sanitizeErrorDetail(err.message, "Lookup failed") });
+  }
+});
   app.use((err, req, res, next) => {
     if (err && err.message === "Not allowed by CORS") {
       return res.status(403).json({ error: "CORS origin denied" });

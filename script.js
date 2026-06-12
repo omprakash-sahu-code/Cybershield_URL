@@ -770,7 +770,7 @@ async function checkSecurity() {
 
       // Show threat-specific tips
       showTips(allThreats);
-
+      showDomainReputation(url);
     } else {
       updateStats('safe');
       const urlObj = new URL(url);
@@ -813,6 +813,7 @@ async function checkSecurity() {
 
       // Show rotating general tip
       showTips([]);
+      showDomainReputation(url);
     }
 
     if (data.typosquatting) {
@@ -895,7 +896,92 @@ async function downloadPDF() {
   pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
   pdf.save('cybershield-report.pdf');
 }
+// ─────────────────────────────
+// DOMAIN REPUTATION
+// ─────────────────────────────
 
+async function showDomainReputation(url) {
+  const resultEl = document.getElementById('result');
+
+  // Remove existing domain card
+  const existing = resultEl.querySelector('.domain-card');
+  if (existing) existing.remove();
+
+  // Placeholder while loading
+  const placeholder = document.createElement('div');
+  placeholder.className = 'domain-card loading-domain';
+  placeholder.innerHTML = `<div class="domain-loading">🔍 Looking up domain info...</div>`;
+  resultEl.insertAdjacentElement('beforeend', placeholder);
+
+  try {
+    const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:3000'
+      : 'https://cybershield-sxz0.onrender.com';
+
+    const response = await fetch(`${apiHost}/domain-info?domain=${encodeURIComponent(url)}`);
+    const data = await response.json();
+
+    if (data.error) throw new Error(data.error);
+
+    const trustColor = data.trustScore >= 70 ? '#00ffb4' : data.trustScore >= 40 ? '#fbbf24' : '#f87171';
+    const trustLabel = data.trustScore >= 70 ? 'Trusted' : data.trustScore >= 40 ? 'Moderate' : 'Low Trust';
+
+    const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+
+    placeholder.outerHTML = `
+      <div class="domain-card" role="region" aria-label="Domain Reputation">
+        <div class="domain-header">
+          <span class="domain-header-icon" aria-hidden="true">🌐</span>
+          <span class="domain-header-title">Domain Reputation</span>
+          <span class="domain-trust-badge" style="color: ${trustColor}; border-color: ${trustColor};">
+            ${trustLabel} · ${data.trustScore}/100
+          </span>
+        </div>
+        <div class="domain-grid">
+          <div class="domain-stat">
+            <div class="domain-stat-label">Domain</div>
+            <div class="domain-stat-value">${data.domain}</div>
+          </div>
+          <div class="domain-stat">
+            <div class="domain-stat-label">Age</div>
+            <div class="domain-stat-value">${data.ageYears !== null ? data.ageYears + ' years' : 'N/A'}</div>
+          </div>
+          <div class="domain-stat">
+            <div class="domain-stat-label">Registered</div>
+            <div class="domain-stat-value">${formatDate(data.registered)}</div>
+          </div>
+          <div class="domain-stat">
+            <div class="domain-stat-label">Expires</div>
+            <div class="domain-stat-value">${formatDate(data.expiry)}</div>
+          </div>
+          <div class="domain-stat">
+            <div class="domain-stat-label">Registrar</div>
+            <div class="domain-stat-value">${data.registrar || 'N/A'}</div>
+          </div>
+          <div class="domain-stat">
+            <div class="domain-stat-label">Nameservers</div>
+            <div class="domain-stat-value">${data.nameservers.length ? data.nameservers.join(', ') : 'N/A'}</div>
+          </div>
+        </div>
+        ${data.status.length ? `
+        <div class="domain-status">
+          ${data.status.map(s => `<span class="domain-status-tag">${s}</span>`).join('')}
+        </div>` : ''}
+      </div>
+    `;
+
+  } catch (err) {
+    placeholder.outerHTML = `
+      <div class="domain-card domain-error" role="region" aria-label="Domain Reputation">
+        <div class="domain-header">
+          <span aria-hidden="true">🌐</span>
+          <span class="domain-header-title">Domain Reputation</span>
+        </div>
+        <p class="domain-error-msg">Could not fetch domain info: ${err.message}</p>
+      </div>
+    `;
+  }
+}
 // ─────────────────────────────
 // THEME TOGGLE
 // ─────────────────────────────
