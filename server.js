@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 const ALLOWED_ORIGINS = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
   : ['http://localhost:3000', 'http://localhost:5500', 'http://127.0.0.1:5500',
-     'https://cybershield-sxz0.onrender.com','https://mrinalray.github.io/Cybershield_URL/', 'null'];
+     'https://cybershield-sxz0.onrender.com','https://mrinalray.github.io', 'null'];
 
 app.use(cors({
   origin: (origin, cb) => {
