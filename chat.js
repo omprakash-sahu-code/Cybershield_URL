@@ -120,9 +120,7 @@ async function sendMessage() {
 
   if (typing) { typing.classList.remove('hidden'); scrollToBottom(); }
 
-  const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:3000'
-    : 'https://cybershield-sxz0.onrender.com';
+  const apiHost = 'https://cybershield-30a3.onrender.com';
 
   try {
     const response = await fetch(`${apiHost}/api/scam-detect`, {

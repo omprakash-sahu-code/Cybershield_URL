@@ -171,9 +171,7 @@ async function checkSecurity() {
   showResult('loading', 'Scanning...', 'Checking against threat databases…', url, []);
 
   try {
-    const apiHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:3000'
-      : 'https://cybershield-sxz0.onrender.com';
+    const apiHost = 'https://cybershield-30a3.onrender.com';
 
     const response = await fetch(`${apiHost}/check`, {
       method: 'POST',
